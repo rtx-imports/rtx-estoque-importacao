@@ -85,12 +85,24 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     ClickUp, arquivos JSON manuais no volume do Railway, dependência do
     Supabase compartilhado para dado de venda) — é o tipo de acoplamento que a
     decisão 11 já descartou.
-13. **Sequenciamento: terminar de validar o módulo de Pedido primeiro**
-    (testar pedidos/itens/documentos na tela, resolver a exportação de
-    planilha), só depois começar o módulo de decisão de compra da decisão 12
-    — confirmado por Beatriz. Durante a transição, **`rtx-pedidos` continua no
-    ar em uso normal por Bruno**, sem nenhuma mudança lá; este projeto só lê o
-    código dele como referência até o módulo novo estar pronto e validado. O
+13. **Os itens do pedido nascem da proposta de compra, não de digitação
+    manual.** Quando o módulo de decisão de compra existir, "criar pedido"
+    passa a ser "gerar pedido a partir da proposta aprovada" — os SKUs e
+    quantidades que saíram do cálculo/ajuste na tela viram os itens do pedido
+    automaticamente, em vez do cadastro manual que o MVP usa hoje (que
+    continua existindo como fallback/ajuste pontual). Além disso, a
+    reconciliação entre proforma e invoice final — já prevista em
+    `pedido_documentos.versao` no nível de documento — também precisa
+    acontecer nos **itens**: quando a invoice final vem com quantidade
+    diferente da proforma, o item do pedido precisa refletir isso, não só o
+    anexo. Ainda não desenhado, registrado como requisito para quando essa
+    fase começar.
+14. **Sequenciamento: decisão de compra passa a ser a próxima prioridade**,
+    à frente de terminar de validar o módulo de Pedido (revisa a decisão 13
+    original, que dizia o contrário — confirmado por Beatriz). Durante a
+    transição, **`rtx-pedidos` continua no ar em uso normal por Bruno**, sem
+    nenhuma mudança lá; este projeto só lê o código dele como referência até o
+    módulo novo estar pronto e validado. O
     escopo exato do módulo de decisão de compra (o que entra primeiro, o que
     fica para depois) ainda não foi desenhado.
 
@@ -126,14 +138,14 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
    diante. Nem `financeiro-gbw` nem `painel-gbw` têm hoje controle de
    permissão por usuário — não há um padrão existente para copiar; será
    construído do zero. Depende de Beatriz.
-6. **Escopo exato do módulo de decisão de compra** (decisão 12/13). O
-   sequenciamento (Pedido primeiro) e o destino do `rtx-pedidos` durante a
-   transição (continua em uso normal) já foram decididos — falta desenhar o
-   que exatamente entra: quais conceitos novos do DATA_MODEL.md são
-   necessários de fato (catálogo de produto/SKU, vendas mensais, estoque,
-   parâmetros de cálculo) e com que profundidade, dado que a fonte de dados
-   de venda do `rtx-pedidos` hoje é o Supabase compartilhado que a decisão 11
-   pede pra evitar. Só será desenhado quando essa fase começar.
+6. **Escopo exato do módulo de decisão de compra** (decisões 12/14). O
+   sequenciamento (decisão de compra é a prioridade agora) e o destino do
+   `rtx-pedidos` durante a transição (continua em uso normal) já foram
+   decididos — falta desenhar o que exatamente entra: quais conceitos novos
+   do DATA_MODEL.md são necessários de fato (catálogo de produto/SKU, vendas
+   mensais, estoque, parâmetros de cálculo) e com que profundidade, dado que
+   a fonte de dados de venda do `rtx-pedidos` hoje é o Supabase compartilhado
+   que a decisão 11 pede pra evitar. É o próximo trabalho de desenho.
 
 ## O que ainda depende de Beatriz e não deve ser assumido
 
