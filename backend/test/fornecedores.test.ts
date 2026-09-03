@@ -134,4 +134,49 @@ describe("fornecedores", () => {
     const listActive = await app.inject({ method: "GET", url: "/fornecedores?ativo=true" });
     expect(listActive.json()).toHaveLength(0);
   });
+
+  it("reativa um fornecedor desativado", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor a Reativar" },
+    });
+    const { id } = created.json();
+    await app.inject({ method: "DELETE", url: `/fornecedores/${id}` });
+
+    const response = await app.inject({ method: "PUT", url: `/fornecedores/${id}/ativar` });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().ativo).toBe(true);
+  });
+
+  it("exclui permanentemente um fornecedor sem pedidos vinculados", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor a Excluir" },
+    });
+    const { id } = created.json();
+
+    const response = await app.inject({ method: "DELETE", url: `/fornecedores/${id}/permanente` });
+    expect(response.statusCode).toBe(204);
+
+    const busca = await app.inject({ method: "GET", url: `/fornecedores/${id}` });
+    expect(busca.statusCode).toBe(404);
+  });
+
+  it("recusa exclusão permanente de fornecedor com pedidos vinculados", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor com Pedido" },
+    });
+    const { id } = created.json();
+    await app.inject({ method: "POST", url: "/pedidos", payload: { fornecedor_id: id } });
+
+    const response = await app.inject({ method: "DELETE", url: `/fornecedores/${id}/permanente` });
+    expect(response.statusCode).toBe(409);
+
+    const busca = await app.inject({ method: "GET", url: `/fornecedores/${id}` });
+    expect(busca.statusCode).toBe(200);
+  });
 });

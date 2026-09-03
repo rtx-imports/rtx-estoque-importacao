@@ -37,10 +37,35 @@ export function useCreateFornecedor() {
   });
 }
 
+export function useEditarFornecedor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: FornecedorFormValues }) =>
+      api.put<Fornecedor>(`/fornecedores/${id}`, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fornecedores"] }),
+  });
+}
+
 export function useDesativarFornecedor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<Fornecedor>(`/fornecedores/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fornecedores"] }),
+  });
+}
+
+export function useAtivarFornecedor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.put<Fornecedor>(`/fornecedores/${id}/ativar`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fornecedores"] }),
+  });
+}
+
+export function useExcluirFornecedor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/fornecedores/${id}/permanente`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fornecedores"] }),
   });
 }

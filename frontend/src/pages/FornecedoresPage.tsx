@@ -1,52 +1,110 @@
 import { useState } from "react";
-import { useCreateFornecedor, useDesativarFornecedor, useFornecedores } from "../api/fornecedores";
+import {
+  useAtivarFornecedor,
+  useCreateFornecedor,
+  useDesativarFornecedor,
+  useEditarFornecedor,
+  useExcluirFornecedor,
+  useFornecedores,
+} from "../api/fornecedores";
 import { ApiError } from "../api/client";
+import type { Fornecedor } from "../api/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+
+const FORM_VAZIO = {
+  nome: "",
+  pais: "",
+  moeda_padrao: "USD",
+  exige_pagamento_inicial: false,
+  percentual_pagamento_inicial: "",
+};
 
 export function FornecedoresPage() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const { data: fornecedores, isLoading } = useFornecedores(mostrarInativos ? undefined : true);
   const createFornecedor = useCreateFornecedor();
+  const editarFornecedor = useEditarFornecedor();
   const desativar = useDesativarFornecedor();
+  const ativar = useAtivarFornecedor();
+  const excluir = useExcluirFornecedor();
 
-  const [form, setForm] = useState({
-    nome: "",
-    pais: "",
-    moeda_padrao: "USD",
-    exige_pagamento_inicial: false,
-    percentual_pagamento_inicial: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(FORM_VAZIO);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroLinha, setErroLinha] = useState<{ id: string; mensagem: string } | null>(null);
+
+  function iniciarEdicao(fornecedor: Fornecedor) {
+    setEditingId(fornecedor.id);
+    setForm({
+      nome: fornecedor.nome,
+      pais: fornecedor.pais ?? "",
+      moeda_padrao: fornecedor.moeda_padrao,
+      exige_pagamento_inicial: fornecedor.exige_pagamento_inicial,
+      percentual_pagamento_inicial: fornecedor.percentual_pagamento_inicial?.toString() ?? "",
+    });
+    setErro(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelarEdicao() {
+    setEditingId(null);
+    setForm(FORM_VAZIO);
+    setErro(null);
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setErro(null);
-    createFornecedor.mutate(
-      {
-        nome: form.nome,
-        pais: form.pais || undefined,
-        moeda_padrao: form.moeda_padrao,
-        exige_pagamento_inicial: form.exige_pagamento_inicial,
-        percentual_pagamento_inicial:
-          form.exige_pagamento_inicial && form.percentual_pagamento_inicial
-            ? Number(form.percentual_pagamento_inicial)
-            : null,
-      },
-      {
-        onSuccess: () =>
-          setForm({ nome: "", pais: "", moeda_padrao: "USD", exige_pagamento_inicial: false, percentual_pagamento_inicial: "" }),
-        onError: (error) =>
-          setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao criar fornecedor"),
-      },
-    );
+    const data = {
+      nome: form.nome,
+      pais: form.pais || undefined,
+      moeda_padrao: form.moeda_padrao,
+      exige_pagamento_inicial: form.exige_pagamento_inicial,
+      percentual_pagamento_inicial:
+        form.exige_pagamento_inicial && form.percentual_pagamento_inicial
+          ? Number(form.percentual_pagamento_inicial)
+          : null,
+    };
+    const onError = (error: unknown) =>
+      setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao salvar fornecedor");
+
+    if (editingId) {
+      editarFornecedor.mutate(
+        { id: editingId, data },
+        { onSuccess: () => cancelarEdicao(), onError },
+      );
+    } else {
+      createFornecedor.mutate(data, { onSuccess: () => setForm(FORM_VAZIO), onError });
+    }
   }
+
+  function handleExcluir(fornecedor: Fornecedor) {
+    setErroLinha(null);
+    if (!window.confirm(`Excluir "${fornecedor.nome}" permanentemente? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+    excluir.mutate(fornecedor.id, {
+      onError: (error) =>
+        setErroLinha({
+          id: fornecedor.id,
+          mensagem:
+            error instanceof ApiError && typeof error.body === "object" && error.body && "error" in error.body
+              ? String((error.body as { error: unknown }).error)
+              : "Erro ao excluir fornecedor",
+        }),
+    });
+  }
+
+  const salvando = createFornecedor.isPending || editarFornecedor.isPending;
 
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">Novo fornecedor</h2>
+        <h2 className="mb-3 text-sm font-semibold text-slate-800">
+          {editingId ? "Editando fornecedor" : "Novo fornecedor"}
+        </h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label className={labelClass}>Nome *</label>
@@ -97,14 +155,23 @@ export function FornecedoresPage() {
               />
             </div>
           )}
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               type="submit"
-              disabled={createFornecedor.isPending}
+              disabled={salvando}
               className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {createFornecedor.isPending ? "Salvando..." : "Cadastrar"}
+              {salvando ? "Salvando..." : editingId ? "Salvar alterações" : "Cadastrar"}
             </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={cancelarEdicao}
+                className="rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
         </form>
         {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
@@ -155,14 +222,32 @@ export function FornecedoresPage() {
                       {fornecedor.ativo ? "ativo" : "inativo"}
                     </span>
                   </td>
-                  <td className="py-2 text-right">
-                    {fornecedor.ativo && (
-                      <button
-                        onClick={() => desativar.mutate(fornecedor.id)}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Desativar
+                  <td className="py-2">
+                    <div className="flex justify-end gap-3 text-xs">
+                      <button onClick={() => iniciarEdicao(fornecedor)} className="text-blue-600 hover:underline">
+                        Editar
                       </button>
+                      {fornecedor.ativo ? (
+                        <button
+                          onClick={() => desativar.mutate(fornecedor.id)}
+                          className="text-amber-600 hover:underline"
+                        >
+                          Desativar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => ativar.mutate(fornecedor.id)}
+                          className="text-green-700 hover:underline"
+                        >
+                          Ativar
+                        </button>
+                      )}
+                      <button onClick={() => handleExcluir(fornecedor)} className="text-red-600 hover:underline">
+                        Excluir
+                      </button>
+                    </div>
+                    {erroLinha?.id === fornecedor.id && (
+                      <p className="mt-1 text-right text-xs text-red-600">{erroLinha.mensagem}</p>
                     )}
                   </td>
                 </tr>

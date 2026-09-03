@@ -106,4 +106,35 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
     }
     return fornecedor;
   });
+
+  app.put("/fornecedores/:id/ativar", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const [fornecedor] = await sql`
+      UPDATE fornecedores SET ativo = true, atualizado_em = now()
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    if (!fornecedor) {
+      return reply.code(404).send({ error: "Fornecedor não encontrado" });
+    }
+    return fornecedor;
+  });
+
+  app.delete("/fornecedores/:id/permanente", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const [existing] = await sql`SELECT id FROM fornecedores WHERE id = ${id}`;
+    if (!existing) {
+      return reply.code(404).send({ error: "Fornecedor não encontrado" });
+    }
+
+    const [{ total }] = await sql`SELECT count(*)::int AS total FROM pedidos WHERE fornecedor_id = ${id}`;
+    if (total > 0) {
+      return reply.code(409).send({
+        error: `Não é possível excluir: existem ${total} pedido(s) vinculado(s) a este fornecedor. Desative-o em vez de excluir.`,
+      });
+    }
+
+    await sql`DELETE FROM fornecedores WHERE id = ${id}`;
+    return reply.code(204).send();
+  });
 }
