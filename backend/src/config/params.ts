@@ -11,6 +11,10 @@ export interface ParamDefaults {
   crescimentoMensal: number;
   cambio: number;
   janelaMeses: number;
+  /** Piso de dias de venda cobertos pelo estoque FÍSICO atual — abaixo disso o
+   * produto aparece na Decisão de Compra mesmo se o plano ainda não pediu nada
+   * (alarme extra pro caso do Full/trânsito mascarar o galpão baixo). */
+  estoqueCriticoDias: number;
 }
 
 export interface ParamRow {
@@ -32,6 +36,8 @@ export function envDefaults(env: NodeJS.ProcessEnv = process.env): ParamDefaults
     crescimentoMensal: num(env.CRESCIMENTO_MENSAL, 1.1),
     cambio: num(env.CAMBIO, 5.4),
     janelaMeses: num(env.JANELA_MESES, 9),
+    // Mesmo padrão da tela espelho RtxPedidos.jsx (mín. 60 dias no estoque atual).
+    estoqueCriticoDias: num(env.ESTOQUE_CRITICO_DIAS, 60),
   };
 }
 
@@ -53,6 +59,9 @@ export function mergeParams(defaults: ParamDefaults, rows: ParamRow[]): ParamDef
         break;
       case "janela_meses":
         out.janelaMeses = num(valor, out.janelaMeses);
+        break;
+      case "estoque_critico_dias":
+        out.estoqueCriticoDias = num(valor, out.estoqueCriticoDias);
         break;
       default:
         break;

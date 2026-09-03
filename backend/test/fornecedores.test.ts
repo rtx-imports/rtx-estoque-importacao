@@ -164,6 +164,61 @@ describe("fornecedores", () => {
     expect(busca.statusCode).toBe(404);
   });
 
+  it("cadastra fornecedor com múltiplos tipos de produto e devolve a lista", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor Multi-Tipo", tipos_produto: ["rolinho", "placa"] },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().tipos_produto).toEqual(["placa", "rolinho"]);
+
+    const busca = await app.inject({ method: "GET", url: `/fornecedores/${response.json().id}` });
+    expect(busca.json().tipos_produto).toEqual(["placa", "rolinho"]);
+  });
+
+  it("fornecedor sem tipos_produto informado cai com lista vazia", async () => {
+    const response = await app.inject({ method: "POST", url: "/fornecedores", payload: { nome: "Sem Tipo" } });
+    expect(response.json().tipos_produto).toEqual([]);
+  });
+
+  it("recusa tipo de produto que não existe no cadastro", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor Tipo Inválido", tipos_produto: ["tipo-que-nao-existe"] },
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("substitui a lista de tipos_produto ao editar", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor Edita Tipo", tipos_produto: ["rolinho"] },
+    });
+    const { id } = created.json();
+
+    const response = await app.inject({
+      method: "PUT",
+      url: `/fornecedores/${id}`,
+      payload: { tipos_produto: ["placa"] },
+    });
+    expect(response.json().tipos_produto).toEqual(["placa"]);
+  });
+
+  it("editar sem informar tipos_produto mantém a lista atual", async () => {
+    const created = await app.inject({
+      method: "POST",
+      url: "/fornecedores",
+      payload: { nome: "Fornecedor Mantem Tipo", tipos_produto: ["rolinho"] },
+    });
+    const { id } = created.json();
+
+    const response = await app.inject({ method: "PUT", url: `/fornecedores/${id}`, payload: { pais: "Vietnã" } });
+    expect(response.json().tipos_produto).toEqual(["rolinho"]);
+  });
+
   it("recusa exclusão permanente de fornecedor com pedidos vinculados", async () => {
     const created = await app.inject({
       method: "POST",

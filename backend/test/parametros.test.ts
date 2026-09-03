@@ -33,6 +33,7 @@ describe("parametros", () => {
       crescimentoMensal: 1.1,
       cambio: 5.4,
       janelaMeses: 9,
+      estoqueCriticoDias: 60,
       cambioAtualizadoEm: null,
       ptaxReferencia: { valor: 5.6, data: "2026-09-03" },
     });

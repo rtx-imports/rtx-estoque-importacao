@@ -1,9 +1,10 @@
 import { sql } from "../db.js";
-import { envDefaults, mergeParams } from "../config/params.js";
+import { envDefaults, mergeParams, type ParamDefaults } from "../config/params.js";
 import { planejar } from "../engine/planoCompra.js";
 import { demandaPicoMensal } from "../engine/demanda.js";
 import { lerVendasMensais } from "../repo/vendasPainel.js";
-import type { TipoProduto } from "./skuTipo.js";
+import { dimensaoProduto } from "./dimensoes.js";
+import { custoUnitario } from "./custos.js";
 
 const DIAS_POR_MES = 30;
 
@@ -39,16 +40,26 @@ export async function carregarParametros() {
 export interface PropostaItem {
   sku: string;
   descricao: string;
-  tipo: TipoProduto | null;
+  /** Referencia tipos_produto.nome — cadastro dinâmico, não fica mais restrito a rolinho/placa. */
+  tipo: string | null;
   demandaPicoMensal: number;
   estoque: number;
   transito: number;
   unidadesPorCaixa: number;
   custoUnitUsd: number;
+  /** Custo/unidade do tier "atual" (custos.json) — cai pra custoUnitUsd (manual) sem dado direto/derivado. */
+  custoAtualUsd: number;
+  /** Custo/unidade do tier "transito" (custos.json) — mesmo fallback. */
+  custoTransitoUsd: number;
+  /** Metros — null quando não há como derivar (placa fora da tabela de-para). */
+  widthM: number | null;
+  lengthM: number | null;
   /** Plano de compra dos próximos HORIZONTE (7) meses — índice 0 = mês atual. */
   plan: number[];
   acabaMeses: number | null;
   acabaTipo: "mes" | "semgiro" | "acima12";
+  /** Dias de venda que o estoque FÍSICO atual cobre — null sem giro (não dá pra medir cobertura). */
+  diasEstoqueAtual: number | null;
   necessidadeAuto: number;
   necessidade: number;
   caixas: number;
@@ -58,8 +69,10 @@ export interface PropostaItem {
 }
 
 /**
- * Calcula a proposta de compra de um fornecedor: para cada produto ativo
- * dele, junta venda (lida do painel-gbw), estoque (manual, por enquanto) e
+ * Calcula a proposta de compra de um fornecedor: para cada produto ativo do
+ * **tipo** que esse fornecedor costuma vender (`tipo_produto_padrao`,
+ * decisão 20 — produto não pertence a um fornecedor fixo, decisão 22),
+ * junta venda (lida do painel-gbw), estoque (manual, por enquanto) e
  * em-trânsito (derivado dos pedidos, automático) e aplica o motor de
  * planejamento (planoCompra.ts, portado do rtx-pedidos). `necessidade` (o
  * que vira pedido agora) é o mês 0 do plano. `overrides` (sku -> quantidade)
@@ -79,7 +92,10 @@ export async function calcularProposta(
   };
 
   const produtos = await sql`
-    SELECT * FROM produtos WHERE fornecedor_id = ${fornecedorId} AND ativo = true ORDER BY sku
+    SELECT produtos.* FROM produtos
+    JOIN fornecedor_tipos_produto ftp ON ftp.tipo_produto = produtos.tipo
+    WHERE ftp.fornecedor_id = ${fornecedorId} AND produtos.ativo = true
+    ORDER BY produtos.sku
   `;
   const estoqueRows = await sql`SELECT sku, quantidade FROM estoque`;
   const estoquePorSku = new Map(estoqueRows.map((r) => [r.sku as string, Number(r.quantidade)]));
@@ -93,6 +109,10 @@ export async function calcularProposta(
       const transito = transitoPorSku.get(produto.sku) ?? 0;
       const unidadesPorCaixa = Number(produto.unidades_por_caixa);
       const custoUnitUsd = Number(produto.custo_unit_usd);
+      const tipo = produto.tipo as string | null;
+      const custoAtualUsd = custoUnitario(produto.sku as string, tipo, "atual") ?? custoUnitUsd;
+      const custoTransitoUsd = custoUnitario(produto.sku as string, tipo, "transito") ?? custoUnitUsd;
+      const dimensao = dimensaoProduto(produto.sku as string, tipo);
 
       const { plan, acabaMeses, acabaTipo } = planejar(demanda, estoque, transito, planoParams);
       const necessidadeAuto = plan[0];
@@ -102,19 +122,25 @@ export async function calcularProposta(
       const caixas = necessidade > 0 ? Math.ceil(necessidade / unidadesPorCaixa) : 0;
       const custoUsd = necessidade * custoUnitUsd;
       const custoBrl = custoUsd * params.cambio;
+      const diasEstoqueAtual = demanda > 0 ? estoque / (demanda / DIAS_POR_MES) : null;
 
       return {
         sku: produto.sku as string,
         descricao: produto.descricao as string,
-        tipo: produto.tipo as TipoProduto | null,
+        tipo,
         demandaPicoMensal: demanda,
         estoque,
         transito,
         unidadesPorCaixa,
         custoUnitUsd,
+        custoAtualUsd,
+        custoTransitoUsd,
+        widthM: dimensao?.widthM ?? null,
+        lengthM: dimensao?.lengthM ?? null,
         plan,
         acabaMeses,
         acabaTipo,
+        diasEstoqueAtual,
         necessidadeAuto,
         necessidade,
         caixas,
@@ -126,6 +152,25 @@ export async function calcularProposta(
   );
 
   return { params, itens };
+}
+
+/**
+ * Decisão de Compra só deve MOSTRAR quem precisa de atenção — o produto não
+ * pertence à tela quando não há nem necessidade de pedir nem alerta de
+ * estoque baixo. Critério (combinado por OU): motor já mandou pedir este mês
+ * (`necessidadeAuto > 0`, que já embute cobertura mínima + lead time +
+ * crescimento) OU o estoque FÍSICO atual está abaixo do piso de dias
+ * configurado (`estoqueCriticoDias`) — alarme extra pro caso do Full/trânsito
+ * mascararem um problema no galpão que o plano ainda não capturou. Separado
+ * de `calcularProposta` (que sempre devolve TODOS os produtos do fornecedor,
+ * inclusive pra permitir `gerar-pedido` de um SKU fora da lista visível via
+ * override) — é só um filtro de exibição, aplicado pela rota GET /proposta.
+ */
+export function precisaAtencao(item: PropostaItem, params: ParamDefaults): boolean {
+  return (
+    item.necessidadeAuto > 0 ||
+    (item.diasEstoqueAtual != null && item.diasEstoqueAtual < params.estoqueCriticoDias)
+  );
 }
 
 export function totalizarProposta(itens: PropostaItem[]) {

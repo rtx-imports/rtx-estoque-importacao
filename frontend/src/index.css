@@ -1,5 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 body {
   @apply bg-slate-50 text-slate-900;
+}
+
+/* Fonte monoespaçada usada nas telas de planilha (Decisão de Compra, Produtos) —
+   mesma família do rtx-pedidos, pra ficar familiar a quem já usa aquela tela. */
+.font-planilha {
+  font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }

@@ -42,8 +42,11 @@ em vez de quebrar, útil pra dev sem credencial). `LEAD_TIME_DIAS`, `COBERTURA_M
 Banco do Brasil — DECISIONS.md, decisão 18); a tela mostra o PTAX do BCB só como
 referência ao lado, buscado ao vivo da API pública do Banco Central.
 
-Produtos são separados em abas por tipo (Rolinhos/Placas), classificado automaticamente
-pelo SKU do Tiny (DECISIONS.md, decisão 20). O cadastro de produto busca o SKU/descrição
-direto no Tiny em vez de digitar na mão — configure `TINY_TOKEN_RTX` em `backend/.env` para
-ativar (sem ele, a busca fica indisponível e o cadastro manual continua funcionando —
-DECISIONS.md, decisão 19).
+Produto não pertence a um fornecedor fixo — é catálogo puro (SKU + tipo rolinho/placa,
+classificado automaticamente pelo SKU do Tiny), e o fornecedor entra só na hora de gerar o
+pedido, resolvido por `tipo_produto_padrao` de cada fornecedor (DECISIONS.md, decisões 20 e
+23). Cadastro de produto fica na aba **Produtos**, não na Decisão de Compra: "Sincronizar
+catálogo do Tiny" puxa o catálogo inteiro de uma vez e cadastra os classificáveis em
+rolinho/placa (demora — percorre todas as páginas do Tiny), além de um cadastro manual
+avulso. Configure `TINY_TOKEN_RTX` em `backend/.env` para ativar (sem ele, a sincronização
+fica indisponível e o cadastro manual continua funcionando — DECISIONS.md, decisão 19).

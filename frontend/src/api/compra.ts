@@ -2,24 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
 import type { ParametrosComMetadados, Pedido, Produto, Proposta } from "./types";
 
-export function useProdutos(fornecedorId?: string) {
+export function useTodosProdutos(tipo?: string) {
   return useQuery({
-    queryKey: ["produtos", { fornecedorId }],
-    queryFn: () => api.get<Produto[]>(`/produtos${fornecedorId ? `?fornecedor_id=${fornecedorId}` : ""}`),
-    enabled: Boolean(fornecedorId),
+    queryKey: ["produtos", "todos", { tipo }],
+    queryFn: () => api.get<Produto[]>(`/produtos${tipo ? `?tipo=${tipo}` : ""}`),
   });
-}
-
-export function useTodosProdutos() {
-  return useQuery({ queryKey: ["produtos", "todos"], queryFn: () => api.get<Produto[]>("/produtos") });
 }
 
 export interface ProdutoFormValues {
   sku: string;
   descricao?: string;
-  fornecedor_id: string;
   unidades_por_caixa?: number;
   custo_unit_usd?: number;
+  tipo?: string;
 }
 
 export function useCreateProduto() {
@@ -30,12 +25,35 @@ export function useCreateProduto() {
   });
 }
 
+export interface ProdutoEditValues {
+  descricao?: string;
+  unidades_por_caixa?: number;
+  custo_unit_usd?: number;
+  ativo?: boolean;
+  tipo?: string | null;
+}
+
+export function useEditarProduto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sku, data }: { sku: string; data: ProdutoEditValues }) =>
+      api.put<Produto>(`/produtos/${sku}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["proposta"] });
+    },
+  });
+}
+
 export function useSetEstoque() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ sku, quantidade }: { sku: string; quantidade: number }) =>
       api.put(`/estoque/${sku}`, { quantidade }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["proposta"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["proposta"] });
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+    },
   });
 }
 

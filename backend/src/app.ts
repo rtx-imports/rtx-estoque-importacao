@@ -8,6 +8,7 @@ import { pedidosRoutes } from "./routes/pedidos.js";
 import { produtosRoutes } from "./routes/produtos.js";
 import { propostaRoutes } from "./routes/proposta.js";
 import { tinyRoutes } from "./routes/tiny.js";
+import { tiposProdutoRoutes } from "./routes/tiposProduto.js";
 
 export function buildApp() {
   const app = Fastify({ logger: !process.env.VITEST });
@@ -24,6 +25,7 @@ export function buildApp() {
   app.register(parametrosRoutes);
   app.register(propostaRoutes);
   app.register(tinyRoutes);
+  app.register(tiposProdutoRoutes);
 
   return app;
 }

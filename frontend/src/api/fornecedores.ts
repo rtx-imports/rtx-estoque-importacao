@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { Fornecedor, TipoProduto } from "./types";
+import type { Fornecedor } from "./types";
 
 export function useFornecedores(ativo?: boolean) {
   return useQuery({
@@ -27,7 +27,7 @@ export interface FornecedorFormValues {
   moeda_padrao?: string;
   exige_pagamento_inicial?: boolean;
   percentual_pagamento_inicial?: number | null;
-  tipo_produto_padrao?: TipoProduto | null;
+  tipos_produto?: string[];
 }
 
 export function useCreateFornecedor() {

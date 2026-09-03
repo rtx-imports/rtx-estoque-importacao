@@ -1,21 +1,28 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildApp } from "../src/app.js";
 import { sql } from "../src/db.js";
+import { TinyNaoConfiguradoError } from "../src/repo/tinyProdutos.js";
+
+vi.mock("../src/repo/tinyProdutos.js", async () => {
+  const actual = await vi.importActual<typeof import("../src/repo/tinyProdutos.js")>(
+    "../src/repo/tinyProdutos.js",
+  );
+  return { ...actual, buscarCatalogoCompletoTiny: vi.fn(), buscarEstoqueTiny: vi.fn(), PAUSA_ENTRE_PAGINAS_MS: 0 };
+});
+
+const { buscarCatalogoCompletoTiny, buscarEstoqueTiny } = await import("../src/repo/tinyProdutos.js");
 
 const app = buildApp();
-
-async function criarFornecedor() {
-  const response = await app.inject({
-    method: "POST",
-    url: "/fornecedores",
-    payload: { nome: "Fornecedor Produtos" },
-  });
-  return response.json();
-}
 
 beforeEach(async () => {
   await sql`TRUNCATE fornecedores CASCADE`;
   await sql`TRUNCATE produtos CASCADE`;
+  vi.mocked(buscarEstoqueTiny).mockResolvedValue(0);
+});
+
+afterEach(() => {
+  vi.mocked(buscarCatalogoCompletoTiny).mockReset();
+  vi.mocked(buscarEstoqueTiny).mockReset();
 });
 
 afterAll(async () => {
@@ -24,41 +31,27 @@ afterAll(async () => {
 });
 
 describe("produtos", () => {
-  it("cria um produto vinculado a um fornecedor", async () => {
-    const fornecedor = await criarFornecedor();
+  it("cria um produto (sem fornecedor — produto é catálogo, não pertence a um fornecedor)", async () => {
     const response = await app.inject({
       method: "POST",
       url: "/produtos",
-      payload: {
-        sku: "01605PRATA-001",
-        descricao: "Placa 3D 60x60",
-        fornecedor_id: fornecedor.id,
-        unidades_por_caixa: 20,
-        custo_unit_usd: 1.2,
-      },
+      payload: { sku: "01605PRATA-001", descricao: "Placa 3D 60x60", unidades_por_caixa: 20, custo_unit_usd: 1.2 },
     });
     expect(response.statusCode).toBe(201);
     const body = response.json();
     expect(body.sku).toBe("01605PRATA-001");
     expect(body.ativo).toBe(true);
+    expect(body.fornecedor_id).toBeUndefined();
   });
 
-  it("rejeita produto com fornecedor_id inexistente", async () => {
-    const response = await app.inject({
-      method: "POST",
-      url: "/produtos",
-      payload: { sku: "SKU1", fornecedor_id: "00000000-0000-0000-0000-000000000000" },
-    });
-    expect(response.statusCode).toBe(400);
-  });
+  it("lista produtos filtrando por tipo", async () => {
+    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "10401BRAFOS100" } }); // rolinho
+    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "30605PLMDBR60C" } }); // placa
 
-  it("lista produtos filtrando por fornecedor", async () => {
-    const fornecedorA = await criarFornecedor();
-    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "SKU-A", fornecedor_id: fornecedorA.id } });
-    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "SKU-B" } });
-
-    const response = await app.inject({ method: "GET", url: `/produtos?fornecedor_id=${fornecedorA.id}` });
-    expect(response.json()).toHaveLength(1);
+    const response = await app.inject({ method: "GET", url: "/produtos?tipo=rolinho" });
+    const body = response.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].sku).toBe("10401BRAFOS100");
   });
 
   it("edita um produto existente", async () => {
@@ -98,5 +91,118 @@ describe("produtos", () => {
       payload: { custo_unit_usd: 3 },
     });
     expect(response.json().tipo).toBe("rolinho");
+  });
+
+  it("permite limpar o tipo explicitamente", async () => {
+    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "10401BRAFOS100" } });
+    const response = await app.inject({
+      method: "PUT",
+      url: "/produtos/10401BRAFOS100",
+      payload: { tipo: null },
+    });
+    expect(response.json().tipo).toBeNull();
+  });
+});
+
+describe("POST /produtos/importar-tiny-catalogo", () => {
+  it("importa só os classificáveis em rolinho/placa, ignorando o resto do catálogo do Tiny", async () => {
+    vi.mocked(buscarCatalogoCompletoTiny).mockResolvedValue({
+      totalNoTiny: 3,
+      classificados: [
+        { sku: "10401BRAFOS100", nome: "Rolo A", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: "rolinho" },
+        { sku: "30605PLMDBR60C", nome: "Placa B", tinyId: "2", unidade: "UN", situacao: "A", tipoSugerido: "placa" },
+      ],
+    });
+
+    vi.mocked(buscarEstoqueTiny).mockResolvedValue(42);
+
+    const response = await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      totalNoTiny: 3,
+      classificados: 2,
+      naoClassificados: 1,
+      importados: 2,
+      jaExistiam: 0,
+      estoqueAtualizado: 2,
+      custoPreenchido: 0,
+    });
+
+    const estoque = await app.inject({ method: "GET", url: "/estoque" });
+    expect(estoque.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sku: "10401BRAFOS100", quantidade: 42 }),
+        expect.objectContaining({ sku: "30605PLMDBR60C", quantidade: 42 }),
+      ]),
+    );
+
+    const produtos = await app.inject({ method: "GET", url: "/produtos" });
+    const body = produtos.json();
+    expect(body).toHaveLength(2);
+    expect(body.find((p: { sku: string }) => p.sku === "10401BRAFOS100").tipo).toBe("rolinho");
+    expect(body.find((p: { sku: string }) => p.sku === "30605PLMDBR60C").tipo).toBe("placa");
+  });
+
+  it("pula SKUs que já existem em vez de duplicar", async () => {
+    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "10401BRAFOS100" } });
+    vi.mocked(buscarCatalogoCompletoTiny).mockResolvedValue({
+      totalNoTiny: 1,
+      classificados: [
+        { sku: "10401BRAFOS100", nome: "Rolo A", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: "rolinho" },
+      ],
+    });
+
+    const response = await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
+    expect(response.json()).toEqual({
+      totalNoTiny: 1,
+      classificados: 1,
+      naoClassificados: 0,
+      importados: 0,
+      jaExistiam: 1,
+      estoqueAtualizado: 1,
+      custoPreenchido: 0,
+    });
+  });
+
+  it("já cadastra o produto novo com o custo da tabela custos.json (SKU com custo 'atual' conhecido)", async () => {
+    vi.mocked(buscarCatalogoCompletoTiny).mockResolvedValue({
+      totalNoTiny: 1,
+      classificados: [
+        {
+          sku: "01105BRABRI05C", // tem custo "atual" conhecido em custos.json
+          nome: "Rolo com custo",
+          tinyId: "9",
+          unidade: "UN",
+          situacao: "A",
+          tipoSugerido: "rolinho",
+        },
+      ],
+    });
+
+    await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
+
+    const produto = await app.inject({ method: "GET", url: "/produtos/01105BRABRI05C" });
+    expect(produto.json().custo_unit_usd).toBeCloseTo(0.18404811, 6);
+  });
+
+  it("faz backfill do custo de produto já cadastrado antes com custo 0 (sync anterior a essa tabela existir)", async () => {
+    await app.inject({
+      method: "POST",
+      url: "/produtos",
+      payload: { sku: "01105BRABRI05C", tipo: "rolinho", custo_unit_usd: 0 },
+    });
+    vi.mocked(buscarCatalogoCompletoTiny).mockResolvedValue({ totalNoTiny: 0, classificados: [] });
+
+    const response = await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
+    expect(response.json().custoPreenchido).toBe(1);
+
+    const produto = await app.inject({ method: "GET", url: "/produtos/01105BRABRI05C" });
+    expect(produto.json().custo_unit_usd).toBeCloseTo(0.18404811, 6);
+  });
+
+  it("devolve 503 quando o Tiny não está configurado", async () => {
+    vi.mocked(buscarCatalogoCompletoTiny).mockRejectedValue(new TinyNaoConfiguradoError());
+    const response = await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
+    expect(response.statusCode).toBe(503);
   });
 });

@@ -1,33 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
-import {
-  useCreateProduto,
-  useGerarPedido,
-  useParametros,
-  useProdutos,
-  useProposta,
-  useSetEstoque,
-  useSetParametro,
-} from "../api/compra";
+import { useGerarPedido, useParametros, useProposta, useSetEstoque, useSetParametro } from "../api/compra";
 import { useFornecedores } from "../api/fornecedores";
-import { useTinyProdutos } from "../api/tiny";
-import type { Fornecedor, PropostaItem, TinyProduto, TipoProduto } from "../api/types";
-
-const TIPO_LABEL: Record<TipoProduto, string> = { rolinho: "Rolinho", placa: "Placa" };
+import { useTiposProduto } from "../api/tiposProduto";
+import type { PropostaItem } from "../api/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const smallInputClass = "w-24 rounded-md border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
-
-function useDebounced<T>(valor: T, atrasoMs = 350): T {
-  const [debounced, setDebounced] = useState(valor);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(valor), atrasoMs);
-    return () => clearTimeout(timer);
-  }, [valor, atrasoMs]);
-  return debounced;
-}
 
 function formatarData(iso: string): string {
   const [, mes, dia] = iso.split("-");
@@ -51,23 +31,33 @@ function mesLabel(k: number): string {
   return `${MESES_ABREV[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
 }
 
-type TipoTab = "rolinho" | "placa" | "outros";
-const TABS: { tipo: TipoTab; label: string }[] = [
-  { tipo: "rolinho", label: "Rolinhos" },
-  { tipo: "placa", label: "Placas" },
-];
+/** Sentinela pra fornecedores sem nenhum tipo_produto cadastrado — não é um tipo de verdade. */
+const TAB_OUTROS = "outros";
+
+function capitalizar(texto: string): string {
+  return texto.length ? texto[0].toUpperCase() + texto.slice(1) : texto;
+}
 
 export function CompraPage() {
   const navigate = useNavigate();
   const { data: fornecedores } = useFornecedores(true);
-  const [tab, setTab] = useState<TipoTab>("rolinho");
+  const { data: tiposProduto } = useTiposProduto();
+  const [tab, setTab] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
 
-  const outrosExistem = (fornecedores ?? []).some((f) => !f.tipo_produto_padrao);
-  const abas = outrosExistem ? [...TABS, { tipo: "outros" as TipoTab, label: "Outros" }] : TABS;
+  const outrosExistem = (fornecedores ?? []).some((f) => f.tipos_produto.length === 0);
+  const abas = [
+    ...(tiposProduto ?? []).map((t) => ({ tipo: t.nome, label: capitalizar(t.nome) + "s" })),
+    ...(outrosExistem ? [{ tipo: TAB_OUTROS, label: "Outros" }] : []),
+  ];
   const fornecedoresDoTab = (fornecedores ?? []).filter((f) =>
-    tab === "outros" ? !f.tipo_produto_padrao : f.tipo_produto_padrao === tab,
+    tab === TAB_OUTROS ? f.tipos_produto.length === 0 : f.tipos_produto.includes(tab),
   );
+
+  useEffect(() => {
+    if (abas.length && !abas.some((a) => a.tipo === tab)) setTab(abas[0].tipo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tiposProduto?.length, outrosExistem]);
 
   useEffect(() => {
     setFornecedorId(fornecedoresDoTab.length === 1 ? fornecedoresDoTab[0].id : "");
@@ -121,7 +111,6 @@ export function CompraPage() {
       </section>
 
       {fornecedor && <ParametrosSection />}
-      {fornecedor && <NovoProdutoForm fornecedor={fornecedor} />}
       {fornecedor && (
         <PropostaSection fornecedorId={fornecedor.id} onPedidoGerado={(id) => navigate(`/pedidos/${id}`)} />
       )}
@@ -142,6 +131,11 @@ function ParametrosSection() {
     { chave: "crescimento_mensal", label: "Crescimento mensal (fator, ex: 1.10 = +10%)", valor: parametros.crescimentoMensal },
     { chave: "cambio", label: "Câmbio", valor: parametros.cambio },
     { chave: "janela_meses", label: "Janela de venda (meses)", valor: parametros.janelaMeses },
+    {
+      chave: "estoque_critico_dias",
+      label: "Estoque crítico (dias)",
+      valor: parametros.estoqueCriticoDias,
+    },
   ];
 
   const cambioDesatualizado =
@@ -196,160 +190,9 @@ function ParametrosSection() {
   );
 }
 
-function NovoProdutoForm({ fornecedor }: { fornecedor: Fornecedor }) {
-  const createProduto = useCreateProduto();
-  const [form, setForm] = useState({ sku: "", descricao: "", unidades_por_caixa: "1", custo_unit_usd: "0" });
-  const [erro, setErro] = useState<string | null>(null);
-  const [avisoTipo, setAvisoTipo] = useState<string | null>(null);
-  const [buscaTiny, setBuscaTiny] = useState("");
-  const [mostrarTodosTiny, setMostrarTodosTiny] = useState(false);
-  const buscaTinyDebounced = useDebounced(buscaTiny);
-  const { data: produtosTiny, isFetching: buscandoTiny, error: erroTiny } = useTinyProdutos(buscaTinyDebounced);
-  const tinyNaoConfigurado = erroTiny instanceof ApiError && erroTiny.status === 503;
-
-  const tipoEsperado = fornecedor.tipo_produto_padrao;
-  const resultadosDivergentes = tipoEsperado
-    ? (produtosTiny ?? []).filter((p) => p.tipoSugerido && p.tipoSugerido !== tipoEsperado)
-    : [];
-  const resultadosExibidos =
-    !tipoEsperado || mostrarTodosTiny
-      ? produtosTiny
-      : produtosTiny?.filter((p) => !p.tipoSugerido || p.tipoSugerido === tipoEsperado);
-
-  function selecionarProdutoTiny(produto: TinyProduto) {
-    setForm({ ...form, sku: produto.sku, descricao: produto.nome });
-    setBuscaTiny("");
-    setMostrarTodosTiny(false);
-    setAvisoTipo(
-      tipoEsperado && produto.tipoSugerido && produto.tipoSugerido !== tipoEsperado
-        ? `Atenção: pelo código, esse SKU parece ser "${TIPO_LABEL[produto.tipoSugerido]}", mas ${fornecedor.nome} costuma vender "${TIPO_LABEL[tipoEsperado]}". Confira antes de salvar.`
-        : null,
-    );
-  }
-
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setErro(null);
-    createProduto.mutate(
-      {
-        sku: form.sku,
-        descricao: form.descricao || undefined,
-        fornecedor_id: fornecedor.id,
-        unidades_por_caixa: Number(form.unidades_por_caixa),
-        custo_unit_usd: Number(form.custo_unit_usd),
-      },
-      {
-        onSuccess: () => {
-          setForm({ sku: "", descricao: "", unidades_por_caixa: "1", custo_unit_usd: "0" });
-          setAvisoTipo(null);
-        },
-        onError: (error) =>
-          setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao cadastrar produto"),
-      },
-    );
-  }
-
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-800">Novo produto</h2>
-
-      <div className="relative mb-3">
-        <label className={labelClass}>Buscar no Tiny (preenche SKU e descrição)</label>
-        <input
-          className={inputClass}
-          value={buscaTiny}
-          onChange={(e) => setBuscaTiny(e.target.value)}
-          placeholder="Digite ao menos 2 letras do código ou nome..."
-        />
-        {buscandoTiny && <p className="mt-1 text-xs text-slate-500">Buscando...</p>}
-        {tinyNaoConfigurado && (
-          <p className="mt-1 text-xs text-amber-600">Integração com o Tiny não configurada — cadastre manualmente.</p>
-        )}
-        {erroTiny && !tinyNaoConfigurado && (
-          <p className="mt-1 text-xs text-red-600">Falha ao buscar no Tiny — cadastre manualmente.</p>
-        )}
-        {!!resultadosExibidos?.length && (
-          <ul className="absolute z-10 mt-1 max-h-48 w-full divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200 bg-white text-sm shadow-md">
-            {resultadosExibidos.map((produto) => (
-              <li key={produto.tinyId}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-slate-50"
-                  onClick={() => selecionarProdutoTiny(produto)}
-                >
-                  <span>
-                    <span className="font-medium">{produto.sku}</span> — {produto.nome}
-                  </span>
-                  {produto.tipoSugerido && (
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                      {TIPO_LABEL[produto.tipoSugerido]}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {produtosTiny && produtosTiny.length === 0 && buscaTinyDebounced.trim().length >= 2 && !buscandoTiny && (
-          <p className="mt-1 text-xs text-slate-500">Nenhum produto encontrado no Tiny para essa busca.</p>
-        )}
-        {!mostrarTodosTiny && resultadosDivergentes.length > 0 && (
-          <button
-            type="button"
-            className="mt-1 text-xs text-blue-600 hover:underline"
-            onClick={() => setMostrarTodosTiny(true)}
-          >
-            {resultadosDivergentes.length} resultado(s) de outro tipo ocultado(s) — mostrar todos
-          </button>
-        )}
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-        <div>
-          <label className={labelClass}>SKU *</label>
-          <input required className={inputClass} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelClass}>Descrição</label>
-          <input className={inputClass} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
-        </div>
-        <div>
-          <label className={labelClass}>Unid./caixa</label>
-          <input
-            type="number"
-            className={inputClass}
-            value={form.unidades_por_caixa}
-            onChange={(e) => setForm({ ...form, unidades_por_caixa: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Custo unit. (USD)</label>
-          <input
-            type="number"
-            step="any"
-            className={inputClass}
-            value={form.custo_unit_usd}
-            onChange={(e) => setForm({ ...form, custo_unit_usd: e.target.value })}
-          />
-        </div>
-        <div className="sm:col-span-5">
-          <button
-            type="submit"
-            disabled={createProduto.isPending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {createProduto.isPending ? "Salvando..." : "Cadastrar produto"}
-          </button>
-        </div>
-      </form>
-      {avisoTipo && <p className="mt-2 text-sm text-amber-600">{avisoTipo}</p>}
-      {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
-    </section>
-  );
-}
-
 /** "Revisar" (vermelho) até 3 meses pra acabar, "Repor" (amber) até 5, senão "Ok". Mesmos limiares
- * usados na coloração da coluna "Acaba em" da referência (rtx-pedidos). */
+ * usados na coloração da coluna "Acaba em" da referência (rtx-pedidos). Vira uma borda colorida na
+ * célula "Item Code / Descrição" — mesmo padrão visual da referência (tick lateral), não uma coluna. */
 type StatusLinha = "ok" | "repor" | "revisar" | "semgiro";
 function statusLinha(item: PropostaItem): StatusLinha {
   if (item.acabaTipo === "semgiro") return "semgiro";
@@ -359,13 +202,22 @@ function statusLinha(item: PropostaItem): StatusLinha {
   if (k <= 5) return "repor";
   return "ok";
 }
-const STATUS_BADGE: Record<StatusLinha, string> = {
-  ok: "bg-green-100 text-green-700",
-  repor: "bg-amber-100 text-amber-700",
-  revisar: "bg-red-100 text-red-700",
-  semgiro: "bg-slate-100 text-slate-500",
+const STATUS_BORDA: Record<StatusLinha, string> = {
+  ok: "border-l-emerald-600",
+  repor: "border-l-amber-500",
+  revisar: "border-l-red-600",
+  semgiro: "border-l-slate-300",
 };
 const STATUS_LABEL: Record<StatusLinha, string> = { ok: "Ok", repor: "Repor", revisar: "Revisar", semgiro: "Sem giro" };
+
+const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+function formatarBRL(valor: number): string {
+  return brlFormatter.format(valor);
+}
+
+function formatarMetros(valor: number | null): string {
+  return valor == null ? "—" : `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}m`;
+}
 
 function acabaLabel(item: PropostaItem): string {
   if (item.acabaTipo === "semgiro") return "Sem giro";
@@ -381,26 +233,33 @@ function acabaClasse(item: PropostaItem): string {
   return "text-slate-600";
 }
 
+const thClass =
+  "sticky top-0 z-10 whitespace-nowrap border-b border-r border-slate-200 bg-white px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400";
+const tdClass = "whitespace-nowrap border-b border-r border-slate-100 px-2 py-1 text-right";
+const tdValorClass = tdClass + " bg-teal-50/60 text-teal-700";
+
 function PropostaSection({ fornecedorId, onPedidoGerado }: { fornecedorId: string; onPedidoGerado: (id: string) => void }) {
-  const { data: produtos } = useProdutos(fornecedorId);
   const { data: proposta, isLoading } = useProposta(fornecedorId);
   const setEstoque = useSetEstoque();
   const gerarPedido = useGerarPedido();
 
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [busca, setBusca] = useState("");
   const [erro, setErro] = useState<string | null>(null);
 
-  if (!produtos?.length) {
-    return (
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="text-sm text-slate-500">Nenhum produto cadastrado para este fornecedor ainda.</p>
-      </section>
-    );
-  }
   if (isLoading || !proposta) {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <p className="text-sm text-slate-500">Calculando proposta...</p>
+      </section>
+    );
+  }
+  if (!proposta.itens.length) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <p className="text-sm text-slate-500">
+          Nenhum produto desse tipo cadastrado ainda — cadastre na aba Produtos.
+        </p>
       </section>
     );
   }
@@ -427,102 +286,152 @@ function PropostaSection({ fornecedorId, onPedidoGerado }: { fornecedorId: strin
     );
   }
 
-  const totalNecessidade = proposta.itens.reduce((soma, item) => soma + necessidadeEfetiva(item), 0);
+  const buscaLower = busca.trim().toLowerCase();
+  const itensVisiveis = buscaLower
+    ? proposta.itens.filter(
+        (item) => item.sku.toLowerCase().includes(buscaLower) || item.descricao.toLowerCase().includes(buscaLower),
+      )
+    : proposta.itens;
+
+  const totalNecessidade = itensVisiveis.reduce((soma, item) => soma + necessidadeEfetiva(item), 0);
+  const cambio = proposta.params.cambio;
   const meses = proposta.itens[0]?.plan.map((_, m) => m) ?? [0, 1, 2, 3, 4, 5, 6];
+  const totalColunas = 13 + meses.length;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-800">Proposta de compra</h2>
-      <p className="mb-3 text-xs text-slate-500">
-        Cada coluna mensal é quanto pedir naquele mês, considerando lead time e crescimento esperado — só o mês
-        atual (destacado) vira pedido agora.
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1150px] text-left text-sm">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">Proposta de compra</h2>
+          <p className="text-xs text-slate-500">
+            Cada coluna mensal é quanto pedir naquele mês, considerando lead time e crescimento esperado — só o
+            mês atual (destacado) vira pedido agora.
+          </p>
+        </div>
+        <div className="w-64">
+          <input
+            className="font-planilha w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="⌕ Buscar SKU ou descrição..."
+          />
+        </div>
+      </div>
+
+      <div className="max-h-[70vh] overflow-auto rounded-md border border-slate-200">
+        <table className="font-planilha w-max min-w-full border-collapse text-[12.5px] tabular-nums">
           <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-              <th className="py-2 pr-3">SKU</th>
-              <th className="py-2 pr-3">Descrição</th>
-              <th className="py-2 pr-3 text-right">Demanda/mês</th>
-              <th className="py-2 pr-3 text-right">Estoque</th>
-              <th className="py-2 pr-3 text-right">Trânsito</th>
-              <th className="py-2 pr-3 text-right">Acaba em</th>
-              <th className="py-2 pr-3">Status</th>
+            <tr>
+              <th className={thClass + " text-left"}>Item Code / Descrição</th>
+              <th className={thClass}>Width</th>
+              <th className={thClass}>Length</th>
+              <th className={thClass} title="Unidades por caixa">
+                Quantity
+              </th>
+              <th className={thClass + " bg-teal-50/60"} title="Aproximado: demanda de pico mensal × custo × câmbio">
+                CMV 30d
+              </th>
+              <th className={thClass}>SKU importado</th>
+              <th className={thClass}>Estoque Atual</th>
+              <th className={thClass + " bg-teal-50/60"}>Valor Atual</th>
+              <th className={thClass} title="Estoque em centros de fulfillment (ML/Shopee) — não integrado ainda">
+                Estoque Full
+              </th>
+              <th className={thClass + " bg-teal-50/60"}>Valor Full</th>
+              <th className={thClass}>Em trânsito</th>
+              <th className={thClass + " bg-teal-50/60"}>Valor Trânsito</th>
+              <th className={thClass}>Acaba Em</th>
               {meses.map((m) => (
-                <th key={m} className={"py-2 pr-3 text-right " + (m === 0 ? "text-slate-800" : "")}>
+                <th key={m} className={thClass + (m === 0 ? " bg-teal-50" : "")}>
                   {mesLabel(m)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {proposta.itens.map((item) => (
-              <tr key={item.sku} className="border-b border-slate-100">
-                <td className="py-2 pr-3 font-medium">{item.sku}</td>
-                <td className="py-2 pr-3">{item.descricao}</td>
-                <td className="py-2 pr-3 text-right">{item.demandaPicoMensal}</td>
-                <td className="py-2 pr-3 text-right">
-                  <input
-                    type="number"
-                    min={0}
-                    className={smallInputClass}
-                    defaultValue={item.estoque}
-                    onBlur={(e) => {
-                      const valor = Number(e.target.value);
-                      if (Number.isFinite(valor) && valor !== item.estoque) {
-                        setEstoque.mutate({ sku: item.sku, quantidade: valor });
-                      }
-                    }}
-                  />
+            {itensVisiveis.map((item) => {
+              const valorAtual = item.estoque * item.custoAtualUsd * cambio;
+              const valorTransito = item.transito * item.custoTransitoUsd * cambio;
+              const cmv30d = item.demandaPicoMensal * item.custoUnitUsd * cambio;
+              return (
+                <tr key={item.sku} className="hover:bg-slate-50">
+                  <td
+                    className={`whitespace-normal border-b border-r border-slate-100 border-l-[3px] bg-white px-2.5 py-1 text-left align-middle ${STATUS_BORDA[statusLinha(item)]}`}
+                    title={`Status: ${STATUS_LABEL[statusLinha(item)]}`}
+                  >
+                    <div className="font-medium text-slate-800">{item.sku}</div>
+                    <div className="text-[11px] text-slate-500">{item.descricao}</div>
+                  </td>
+                  <td className={tdClass}>{formatarMetros(item.widthM)}</td>
+                  <td className={tdClass}>{formatarMetros(item.lengthM)}</td>
+                  <td className={tdClass}>{item.unidadesPorCaixa}</td>
+                  <td className={tdValorClass}>{formatarBRL(cmv30d)}</td>
+                  <td className={tdClass + " text-slate-500"}>{item.sku}</td>
+                  <td className={tdClass}>
+                    <input
+                      type="number"
+                      min={0}
+                      className="font-planilha w-16 rounded border border-transparent bg-transparent px-1 py-0.5 text-right tabular-nums outline-none hover:border-slate-300 focus:border-blue-500 focus:bg-white"
+                      defaultValue={item.estoque}
+                      onBlur={(e) => {
+                        const valor = Number(e.target.value);
+                        if (Number.isFinite(valor) && valor !== item.estoque) {
+                          setEstoque.mutate({ sku: item.sku, quantidade: valor });
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className={tdValorClass}>{formatarBRL(valorAtual)}</td>
+                  <td className={tdClass + " text-slate-400"} title="Não integrado ainda">
+                    —
+                  </td>
+                  <td className={tdValorClass + " text-slate-400"}>—</td>
+                  <td
+                    className={tdClass}
+                    title="Calculado a partir dos pedidos embarcados/aguardando desembaraço/em desova/conferência — não editável"
+                  >
+                    {item.transito}
+                  </td>
+                  <td className={tdValorClass}>{formatarBRL(valorTransito)}</td>
+                  <td className={tdClass + " " + acabaClasse(item)}>{acabaLabel(item)}</td>
+                  {item.plan.map((qtd, m) =>
+                    m === 0 ? (
+                      <td key={m} className={tdClass + " bg-teal-50"}>
+                        <input
+                          type="number"
+                          min={0}
+                          className="font-planilha w-16 rounded border border-slate-300 px-1 py-0.5 text-right font-semibold tabular-nums outline-none focus:border-blue-500"
+                          placeholder={String(item.necessidade)}
+                          value={overrides[item.sku] ?? ""}
+                          onChange={(e) => setOverrides({ ...overrides, [item.sku]: e.target.value })}
+                        />
+                      </td>
+                    ) : (
+                      <td key={m} className={tdClass + " text-slate-500"} title={`pedir em ${mesLabel(m)}`}>
+                        {qtd > 0 ? new Intl.NumberFormat("pt-BR").format(qtd) : "·"}
+                      </td>
+                    ),
+                  )}
+                </tr>
+              );
+            })}
+            {!itensVisiveis.length && (
+              <tr>
+                <td colSpan={totalColunas} className="px-3 py-4 text-center text-sm text-slate-400">
+                  Nenhum produto encontrado para "{busca}".
                 </td>
-                <td
-                  className="py-2 pr-3 text-right text-slate-600"
-                  title="Calculado a partir dos pedidos embarcados/aguardando desembaraço/em desova/conferência — não editável"
-                >
-                  {item.transito}
-                </td>
-                <td className={"py-2 pr-3 text-right " + acabaClasse(item)}>{acabaLabel(item)}</td>
-                <td className="py-2 pr-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_BADGE[statusLinha(item)]}`}>
-                    {STATUS_LABEL[statusLinha(item)]}
-                  </span>
-                </td>
-                {item.plan.map((qtd, m) =>
-                  m === 0 ? (
-                    <td key={m} className="py-2 pr-3 text-right">
-                      <input
-                        type="number"
-                        min={0}
-                        className={smallInputClass + " font-semibold"}
-                        placeholder={String(item.necessidade)}
-                        value={overrides[item.sku] ?? ""}
-                        onChange={(e) => setOverrides({ ...overrides, [item.sku]: e.target.value })}
-                      />
-                    </td>
-                  ) : (
-                    <td key={m} className="py-2 pr-3 text-right text-slate-500">
-                      {qtd > 0 ? new Intl.NumberFormat("pt-BR").format(qtd) : "·"}
-                    </td>
-                  ),
-                )}
               </tr>
-            ))}
+            )}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={7} className="pt-3 text-right text-sm font-medium text-slate-600">
-                Total a pedir agora ({mesLabel(0)}):
-              </td>
-              <td className="pt-3 text-right text-sm font-semibold text-slate-800">{totalNecessidade}</td>
-              <td colSpan={Math.max(meses.length - 1, 0)}></td>
-            </tr>
-          </tfoot>
         </table>
       </div>
 
       {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex items-center justify-between">
+        <p className="font-planilha text-xs text-slate-500">
+          Total a pedir agora ({mesLabel(0)}): <span className="font-semibold text-slate-800">{totalNecessidade}</span>
+        </p>
         <button
           onClick={handleGerarPedido}
           disabled={gerarPedido.isPending || totalNecessidade <= 0}

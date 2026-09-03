@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { clsx } from "clsx";
 import { CompraPage } from "./pages/CompraPage";
@@ -22,6 +23,31 @@ function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   );
 }
 
+function useRelogio() {
+  const [agora, setAgora] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setAgora(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return agora;
+}
+
+function Relogio() {
+  const agora = useRelogio();
+  const data = agora.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const hora = agora.toLocaleTimeString("pt-BR");
+  return (
+    <div className="font-planilha ml-auto text-xs text-slate-500">
+      <span className="capitalize">{data}</span> <span className="font-medium text-slate-700">{hora}</span>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <div className="min-h-screen">
@@ -32,6 +58,7 @@ export function App() {
           <NavItem to="/fornecedores">Fornecedores</NavItem>
           <NavItem to="/produtos">Produtos</NavItem>
           <NavItem to="/pedidos">Pedidos</NavItem>
+          <Relogio />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">

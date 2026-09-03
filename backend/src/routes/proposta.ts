@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type postgres from "postgres";
 import { sql } from "../db.js";
-import { calcularProposta, totalizarProposta } from "../domain/proposta.js";
+import { calcularProposta, precisaAtencao, totalizarProposta } from "../domain/proposta.js";
 
 const gerarPedidoSchema = z.object({
   fornecedor_id: z.string().uuid(),
@@ -21,7 +21,10 @@ export async function propostaRoutes(app: FastifyInstance) {
     }
 
     const { params, itens } = await calcularProposta(fornecedor_id);
-    return { fornecedor_id, params, itens, totais: totalizarProposta(itens) };
+    // Só mostra quem precisa de atenção (necessidade > 0 ou estoque atual crítico) —
+    // gerar-pedido continua vendo TODOS os itens, ver precisaAtencao().
+    const itensVisiveis = itens.filter((item) => precisaAtencao(item, params));
+    return { fornecedor_id, params, itens: itensVisiveis, totais: totalizarProposta(itensVisiveis) };
   });
 
   app.post("/proposta/gerar-pedido", async (request, reply) => {

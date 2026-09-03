@@ -208,6 +208,179 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     futuro, aparece um seletor dentro da aba. Fornecedores sem
     `tipo_produto_padrao` aparecem numa aba "Outros" (só existe se houver
     algum).
+22. **Cadastro de produto em lote a partir do Tiny** — Beatriz apontou que
+    cadastrar SKU por SKU não escala quando há muitos produtos (o catálogo de
+    rolinhos tem dezenas de variações de cor/tamanho por linha). A busca do
+    Tiny (decisão 19) ganhou seleção múltipla (checkbox por item + "selecionar
+    todos desta página" + paginação, já que uma busca ampla pode trazer mais
+    de uma página no Tiny) e um botão "Importar N selecionados", que chama
+    `POST /produtos/importar-tiny`: cadastra os que ainda não existem
+    (classificando o tipo pelo SKU, decisão 20) e **ignora silenciosamente os
+    que já existem** em vez de falhar o lote inteiro — permite rodar a mesma
+    importação de novo sem medo de duplicar ou quebrar. Produto importado em
+    lote entra com custo e unid./caixa no padrão (0 e 1) — não dá pra saber
+    isso a partir do Tiny; por isso a tela de Produtos (decisão 20) ganhou
+    edição inline desses dois campos, pra ajustar depois sem precisar voltar
+    pra aba Compra.
+23. **Produto deixou de pertencer a um fornecedor — vira catálogo puro (SKU +
+    tipo), sem `fornecedor_id`.** Revisão da decisão 22 e do desenho original
+    do módulo: Beatriz não quer cadastrar produto dentro da aba Decisão de
+    Compra (isso saiu de lá — ver ponto seguinte); o produto existe só como
+    "isto é um rolinho" ou "isto é uma placa", e a escolha de **qual
+    fornecedor** entra só na hora de gerar o pedido/planilha de exportação
+    (`MVP_SCOPE.md`, pendente #4 — ainda não construída). Coluna
+    `produtos.fornecedor_id` foi **removida** (não só ocultada — sem dado real
+    em produção ainda, sem risco de perda). A Decisão de Compra continua
+    funcionando igual: `calcularProposta` agora liga produto a fornecedor via
+    `produtos.tipo = fornecedores.tipo_produto_padrao` (decisão 20) em vez de
+    um `fornecedor_id` fixo no produto — na prática nenhuma mudança visível
+    pra quem usa a tela, só destrava produto não ter mais dono fixo.
+    **Cadastro de produto saiu da aba Decisão de Compra e mudou pra aba
+    Produtos.** A busca/seleção múltipla do Tiny (decisão 22) foi substituída
+    por **sincronizar o catálogo inteiro do Tiny de uma vez**
+    (`POST /produtos/importar-tiny-catalogo`): percorre todas as páginas do
+    Tiny (36 páginas ≈ 3.600 produtos no catálogo real da RTX no momento
+    desta decisão), classifica cada SKU em rolinho/placa e só cadastra os
+    classificáveis — o resto do catálogo do Tiny (etiquetas, outras linhas
+    que não são de importação) é descartado, não é deste sistema. Produtos já
+    cadastrados são ignorados (idempotente, dá pra rodar de novo). Fica
+    também um cadastro manual avulso (SKU + descrição, tipo calculado
+    automaticamente) pra casos pontuais sem esperar a sincronização
+    completa. Pausa de 300ms entre páginas e uma tentativa extra com espera
+    de 5s se o Tiny sinalizar limite de requisições (códigos 6/7) — evita que
+    a sincronização inteira falhe por uma rajada.
+24. **Tabela da Decisão de Compra reformulada para o layout exato do
+    `rtx-pedidos`** (mesma ordem/nome de coluna: Item Code/Descrição, Width,
+    Length, Quantity, CMV 30d, SKU importado, Estoque Atual, Valor Atual,
+    Estoque Full, Valor Full, Em trânsito, Valor Trânsito, Acaba Em, meses) —
+    pedido de Beatriz pra ficar familiar a Bruno, que já usa aquele padrão.
+    Visual "planilha": fonte monoespaçada (IBM Plex Mono, igual à
+    referência), grade com borda em toda célula, colunas de valor com fundo
+    verde-água clara, mês atual destacado, cabeçalho fixo (sticky) ao rolar.
+    O indicador Ok/Repor/Revisar (decisão 21) virou borda colorida na célula
+    Item Code/Descrição em vez de coluna própria — mesmo padrão visual da
+    referência (lá é um "tick" lateral, não faz parte da lista de colunas com
+    nome). Adicionada barra de busca (SKU/descrição) nessa tabela e também no
+    catálogo da aba Produtos.
+    **Três colunas ficaram sem dado real, por ora — sinalizado, não
+    inventado:**
+    - **Width/Length**: ficam com "—". Não têm campo próprio no cadastro;
+      o `rtx-pedidos` deriva isso de uma tabela de-para por sufixo de SKU que
+      não foi trazida pra cá (decisão 20 só trouxe a classificação
+      rolinho/placa, não as dimensões). Tentar adivinhar por regex na
+      descrição foi descartado de propósito — um width/length errado
+      mostrado como se fosse dado real é pior que "—" (Bruno pode pedir
+      tamanho errado). Pendente: adicionar os campos ao cadastro (manual ou
+      trazendo a tabela de-para do `rtx-pedidos`).
+    - **Estoque Full / Valor Full**: ficam com "—". É estoque em centros de
+      fulfillment (Mercado Livre Full + Shopee FBS) — fonte de dado que este
+      sistema não lê hoje; pode ser que o `painel-gbw` já tenha isso (mesma
+      fonte de onde vem a venda, decisão 15), mas não foi confirmado.
+      Pendente: investigar se dá pra ler de lá.
+    - **CMV 30d**: aproximado como demanda de pico mensal × custo × câmbio
+      (dado que já temos), **não** é literalmente "vendas dos últimos 30
+      dias" como no `rtx-pedidos` (que usa uma janela móvel real) — mais
+      simples, tooltip avisa. **Quantity** foi mapeado pra "unidades por
+      caixa" (dado que já temos) — não confirmado que é o mesmo conceito da
+      referência (lá parece ser editável por linha, aqui não é).
+25. **Data e hora ao vivo no cabeçalho do site** (atualiza a cada segundo) —
+    pedido de Beatriz, visível em todas as páginas.
+26. **Três gaps da decisão 24 fechados: Width/Length, custo em 3 tiers, e
+    filtro de exibição da Decisão de Compra** (confirmado por Beatriz).
+    - **Width/Length**: rolinho deriva do próprio SKU (`domain/dimensoes.ts`
+      — 2 primeiros dígitos = length em metros, sufixo antes do "C" = width em
+      centímetros; confirmado batendo com `container.json` do `rtx-pedidos`).
+      Placa **não** usa `container.json` — verificado que está com width/length
+      **zerado** para as 25 placas de lá, não é fonte válida. A fonte real é
+      `placas-depara.json` do `rtx-pedidos` (copiado como
+      `backend/src/data/placas-dimensoes.json`, 39 SKUs canônicos com
+      `widthM`/`lengthM` medidos). **Limitação conhecida, não resolvida**: o
+      `rtx-pedidos` tinha uma canonicalização SKU-de-venda → SKU-de-importação
+      para placas (`normalize/placa.ts`, 189 pares + regras de fallback,
+      cores/materiais variantes colapsando no mesmo SKU canônico) que não foi
+      portada — a busca aqui é só por igualdade exata de SKU. Placa cujo SKU
+      de venda não bate exatamente com uma chave de `placas-dimensoes.json`
+      fica sem dimensão (null, nunca inventada). Se isso se mostrar comum na
+      prática, portar a canonicalização completa é o próximo passo.
+    - **Custo em 3 tiers**: recuperada a lógica do `rtx-pedidos`
+      (`repo/custos.ts` + `scripts/gen-custos.ts`) em vez do `custo_unit_usd`
+      único manual. `backend/src/data/custos.json` (cópia do gerado lá,
+      4300+ linhas) + `backend/src/repo/custos.ts` (leitor) +
+      `backend/src/domain/custos.ts` (`custoUnitario(sku, tipo, tier)`, com
+      derivação por dimensão de placa quando não há custo direto no SKU).
+      `PropostaItem` ganhou `custoAtualUsd`/`custoTransitoUsd` — usados pela
+      tela pra "Valor Atual"/"Valor Trânsito" (substituindo o cálculo com
+      `custoUnitUsd` fixo); caem de volta pro `custo_unit_usd` manual do
+      produto quando o SKU não está na tabela de referência. **Não portado**:
+      o script `gen-custos.ts` em si (lê 3 planilhas Excel com caminho
+      hardcoded no `Downloads` do Gustavo) — regenerar `custos.json` com
+      planilha nova ainda depende de rodar aquele script no `rtx-pedidos` e
+      copiar o resultado aqui; portar o gerador fica pra quando isso virar
+      necessidade recorrente. Nota: `custo_unit_usd` (manual) continua sendo
+      o preço usado pra **precificar pedido novo** (`custoUsd`/`custoBrl`,
+      `POST /proposta/gerar-pedido`) — os 3 tiers só valorizam estoque já
+      existente, não o que está sendo comprado agora (mesma separação do
+      `rtx-pedidos`: `custos.json` valoriza posição, `container.json.priceSqm`
+      precifica compra — o `priceSqm` não foi portado, fica pro gerador de
+      Excel do pedido quando o formato for confirmado).
+    - **Filtro de exibição**: `GET /proposta` só devolve item quando
+      `precisaAtencao()` (`domain/proposta.ts`) é verdadeiro — necessidade
+      automática do mês > 0 (`plan[0]`, que já embute cobertura mínima + lead
+      time + crescimento) **OU** estoque físico atual cobre menos dias de
+      venda que `estoqueCriticoDias` (novo parâmetro, default 60 dias — mesmo
+      piso já usado na tela espelho `RtxPedidos.jsx`, editável em "Parâmetros
+      do cálculo"). `calcularProposta` continua devolvendo **todos** os
+      produtos do fornecedor (não filtrado) — o filtro é só da rota GET, pra
+      não impedir `gerar-pedido` de usar override num SKU fora da lista
+      visível. Decisão de design: os dois critérios se combinam por OU, não
+      só `plan[0]>0` sozinho — protege contra o caso do Full/trânsito
+      mascararem um problema real no galpão que o plano ainda não capturou.
+27. **Fornecedor pode vender mais de um tipo de produto; tipos de produto
+    viram cadastro dinâmico** (confirmado por Beatriz: "cadastro dinâmico
+    completo"). Antes: `tipo` de produto e `tipo_produto_padrao` de fornecedor
+    eram um `CHECK` fixo em `('rolinho', 'placa')`. Agora: tabela
+    `tipos_produto` (nome como chave, seed com os 2 valores atuais) — nova
+    tela/seção em Fornecedores pra cadastrar tipos novos (`POST
+    /tipos-produto`), sem exigir migração de código pra cada tipo. Fornecedor
+    ganhou tabela N:N `fornecedor_tipos_produto` (substituiu a coluna única
+    `tipo_produto_padrao`) — no cadastro agora é uma lista de checkboxes, uma
+    por tipo cadastrado. `classificarTipoPorSku` (auto-classificação pelo
+    SKU) **continua só cobrindo rolinho/placa** — um tipo novo cadastrado não
+    tem regra de SKU, precisa ser atribuído a mão no produto; isso é aceito
+    de propósito (Width/Length e custo por dimensão de placa também só têm
+    fórmula pra esses dois, mesma limitação). `calcularProposta`
+    (`domain/proposta.ts`) juntava produto↔fornecedor por
+    `fornecedores.tipo_produto_padrao = produtos.tipo`; agora junta via
+    `fornecedor_tipos_produto` (`JOIN ... WHERE ftp.fornecedor_id = X`) — um
+    fornecedor com 2 tipos vê produtos dos 2. Decisão de Compra
+    (`CompraPage.tsx`) trocou as abas fixas Rolinhos/Placas por abas
+    dinâmicas (uma por `tipos_produto` cadastrado) + "Outros" pra fornecedor
+    sem tipo nenhum.
+28. **Estoque puxado do Tiny na sincronização do catálogo, mas continua
+    editável na tela** (confirmado por Beatriz — não virou fonte única/
+    automática, ao contrário do que a decisão 17 cogitava resolver de vez).
+    `POST /produtos/importar-tiny-catalogo` agora também chama
+    `produto.obter.estoque.php` (Tiny API v2, mesma regra do `rtx-pedidos`:
+    soma saldo dos depósitos com `desconsiderar != 'S'`) pra cada produto
+    classificado (novo ou já existente) e faz upsert na tabela `estoque` —
+    melhor esforço por SKU (uma falha isolada não derruba a sincronização
+    inteira). Aba Produtos ganhou coluna Estoque, editável inline (mesmo
+    padrão de Custo) — a próxima sincronização sobrescreve o valor de novo,
+    então uma correção manual pontual não é permanente se o Tiny divergir.
+    `GET /produtos` passou a fazer LEFT JOIN com `estoque` pra trazer esse
+    valor junto (campo `estoque`, 0 quando o SKU nunca teve linha lá).
+29. **Custo unitário (`custo_unit_usd`) passa a ser preenchido automaticamente
+    a partir da tabela de custos já portada (`custos.json`, decisão 26) em vez
+    de ficar sempre em 0 até alguém digitar** — confirmado por Beatriz: "terei
+    uma tabela de custos atualizada logo menos, então use a custos.json por
+    agora" (ou seja, essa fonte pode mudar quando a planilha nova chegar; o
+    mecanismo de backfill continua igual, só troca o arquivo). Dois pontos de
+    preenchimento: (1) produto novo importado do Tiny já nasce com o custo do
+    tier "atual" quando o SKU bate na tabela; (2) a cada sincronização, todo
+    produto com `custo_unit_usd = 0` e tipo classificado tenta de novo (cobre
+    produtos importados antes desse mecanismo existir, e o caso de custos.json
+    ser atualizado depois). Nunca sobrescreve um custo já diferente de 0 —
+    respeita ajuste manual ou um custo já preenchido antes.
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 

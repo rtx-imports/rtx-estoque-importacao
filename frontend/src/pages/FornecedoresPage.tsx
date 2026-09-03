@@ -7,6 +7,7 @@ import {
   useExcluirFornecedor,
   useFornecedores,
 } from "../api/fornecedores";
+import { useCreateTipoProduto, useEditarTipoProduto, useExcluirTipoProduto, useTiposProduto } from "../api/tiposProduto";
 import { ApiError } from "../api/client";
 import type { Fornecedor } from "../api/types";
 
@@ -19,14 +20,17 @@ const FORM_VAZIO = {
   moeda_padrao: "USD",
   exige_pagamento_inicial: false,
   percentual_pagamento_inicial: "",
-  tipo_produto_padrao: "" as "" | "rolinho" | "placa",
+  tipos_produto: [] as string[],
 };
 
-const TIPO_PRODUTO_LABEL: Record<"rolinho" | "placa", string> = { rolinho: "Rolinho", placa: "Placa" };
+function capitalizar(texto: string): string {
+  return texto.length ? texto[0].toUpperCase() + texto.slice(1) : texto;
+}
 
 export function FornecedoresPage() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const { data: fornecedores, isLoading } = useFornecedores(mostrarInativos ? undefined : true);
+  const { data: tiposProduto } = useTiposProduto();
   const createFornecedor = useCreateFornecedor();
   const editarFornecedor = useEditarFornecedor();
   const desativar = useDesativarFornecedor();
@@ -46,7 +50,7 @@ export function FornecedoresPage() {
       moeda_padrao: fornecedor.moeda_padrao,
       exige_pagamento_inicial: fornecedor.exige_pagamento_inicial,
       percentual_pagamento_inicial: fornecedor.percentual_pagamento_inicial?.toString() ?? "",
-      tipo_produto_padrao: fornecedor.tipo_produto_padrao ?? "",
+      tipos_produto: fornecedor.tipos_produto,
     });
     setErro(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -70,7 +74,7 @@ export function FornecedoresPage() {
         form.exige_pagamento_inicial && form.percentual_pagamento_inicial
           ? Number(form.percentual_pagamento_inicial)
           : null,
-      tipo_produto_padrao: form.tipo_produto_padrao || null,
+      tipos_produto: form.tipos_produto,
     };
     const onError = (error: unknown) =>
       setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao salvar fornecedor");
@@ -106,6 +110,8 @@ export function FornecedoresPage() {
 
   return (
     <div className="space-y-6">
+      <TiposProdutoSection />
+
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-800">
           {editingId ? "Editando fornecedor" : "Novo fornecedor"}
@@ -136,17 +142,28 @@ export function FornecedoresPage() {
               onChange={(e) => setForm({ ...form, moeda_padrao: e.target.value })}
             />
           </div>
-          <div>
-            <label className={labelClass}>Tipo de produto padrão</label>
-            <select
-              className={inputClass}
-              value={form.tipo_produto_padrao}
-              onChange={(e) => setForm({ ...form, tipo_produto_padrao: e.target.value as typeof form.tipo_produto_padrao })}
-            >
-              <option value="">Nenhum</option>
-              <option value="rolinho">Rolinho</option>
-              <option value="placa">Placa</option>
-            </select>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Tipos de produto que vende</label>
+            <div className="flex flex-wrap items-center gap-3">
+              {(tiposProduto ?? []).map((tipo) => (
+                <label key={tipo.nome} className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.tipos_produto.includes(tipo.nome)}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        tipos_produto: e.target.checked
+                          ? [...form.tipos_produto, tipo.nome]
+                          : form.tipos_produto.filter((t) => t !== tipo.nome),
+                      })
+                    }
+                  />
+                  {capitalizar(tipo.nome)}
+                </label>
+              ))}
+              {!tiposProduto?.length && <span className="text-xs text-slate-500">Nenhum tipo cadastrado ainda.</span>}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -218,7 +235,7 @@ export function FornecedoresPage() {
                 <th className="py-2">Nome</th>
                 <th className="py-2">País</th>
                 <th className="py-2">Moeda</th>
-                <th className="py-2">Tipo padrão</th>
+                <th className="py-2">Tipos de produto</th>
                 <th className="py-2">Status</th>
                 <th className="py-2" />
               </tr>
@@ -230,7 +247,9 @@ export function FornecedoresPage() {
                   <td className="py-2">{fornecedor.pais ?? "—"}</td>
                   <td className="py-2">{fornecedor.moeda_padrao}</td>
                   <td className="py-2">
-                    {fornecedor.tipo_produto_padrao ? TIPO_PRODUTO_LABEL[fornecedor.tipo_produto_padrao] : "—"}
+                    {fornecedor.tipos_produto.length
+                      ? fornecedor.tipos_produto.map(capitalizar).join(", ")
+                      : "—"}
                   </td>
                   <td className="py-2">
                     <span
@@ -278,5 +297,149 @@ export function FornecedoresPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function TiposProdutoSection() {
+  const { data: tiposProduto } = useTiposProduto();
+  const createTipoProduto = useCreateTipoProduto();
+  const editarTipoProduto = useEditarTipoProduto();
+  const excluirTipoProduto = useExcluirTipoProduto();
+  const [nome, setNome] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [editando, setEditando] = useState<{ nome: string; valor: string } | null>(null);
+  const [erroLinha, setErroLinha] = useState<{ nome: string; mensagem: string } | null>(null);
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setErro(null);
+    createTipoProduto.mutate(nome.trim().toLowerCase(), {
+      onSuccess: () => setNome(""),
+      onError: (error) =>
+        setErro(
+          error instanceof ApiError && error.status === 409
+            ? "Já existe um tipo com esse nome."
+            : "Erro ao cadastrar tipo de produto.",
+        ),
+    });
+  }
+
+  function salvarEdicao(nomeAtual: string) {
+    const novoNome = editando?.valor.trim().toLowerCase();
+    if (!novoNome || novoNome === nomeAtual) {
+      setEditando(null);
+      return;
+    }
+    setErroLinha(null);
+    editarTipoProduto.mutate(
+      { nome: nomeAtual, novoNome },
+      {
+        onSuccess: () => setEditando(null),
+        onError: (error) =>
+          setErroLinha({
+            nome: nomeAtual,
+            mensagem:
+              error instanceof ApiError && error.status === 409
+                ? "Já existe um tipo com esse nome."
+                : "Erro ao renomear.",
+          }),
+      },
+    );
+  }
+
+  function handleExcluir(tipoNome: string) {
+    setErroLinha(null);
+    if (!window.confirm(`Excluir o tipo "${capitalizar(tipoNome)}"? Só funciona se nenhum produto/fornecedor usar esse tipo.`)) {
+      return;
+    }
+    excluirTipoProduto.mutate(tipoNome, {
+      onError: (error) =>
+        setErroLinha({
+          nome: tipoNome,
+          mensagem:
+            error instanceof ApiError && error.status === 409
+              ? "Em uso por produto(s) ou fornecedor(es) — não é possível excluir."
+              : "Erro ao excluir.",
+        }),
+    });
+  }
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <h2 className="mb-1 text-sm font-semibold text-slate-800">Tipos de produto</h2>
+      <p className="mb-3 text-xs text-slate-500">Cadastro dos tipos que um fornecedor pode vender.</p>
+
+      {!!tiposProduto?.length && (
+        <ul className="mb-3 space-y-1.5">
+          {tiposProduto.map((tipo) => (
+            <li key={tipo.nome} className="flex items-center gap-2 text-sm">
+              {editando?.nome === tipo.nome ? (
+                <>
+                  <input
+                    autoFocus
+                    className={inputClass + " max-w-xs"}
+                    value={editando.valor}
+                    onChange={(e) => setEditando({ nome: tipo.nome, valor: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") salvarEdicao(tipo.nome);
+                      if (e.key === "Escape") setEditando(null);
+                    }}
+                  />
+                  <button
+                    onClick={() => salvarEdicao(tipo.nome)}
+                    disabled={editarTipoProduto.isPending}
+                    className="text-xs font-medium text-blue-600 hover:underline"
+                  >
+                    Salvar
+                  </button>
+                  <button onClick={() => setEditando(null)} className="text-xs text-slate-500 hover:underline">
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-slate-700">{capitalizar(tipo.nome)}</span>
+                  <button
+                    onClick={() => setEditando({ nome: tipo.nome, valor: tipo.nome })}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleExcluir(tipo.nome)}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Excluir
+                  </button>
+                </>
+              )}
+              {erroLinha?.nome === tipo.nome && <p className="text-xs text-red-600">{erroLinha.mensagem}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {!tiposProduto?.length && <p className="mb-3 text-xs text-slate-500">Nenhum tipo cadastrado ainda.</p>}
+
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+        <div className="flex-1">
+          <label className={labelClass}>Novo tipo</label>
+          <input
+            required
+            className={inputClass}
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="ex: adesivo"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={createTipoProduto.isPending}
+          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {createTipoProduto.isPending ? "Salvando..." : "Cadastrar tipo"}
+        </button>
+      </form>
+      {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
+    </section>
   );
 }

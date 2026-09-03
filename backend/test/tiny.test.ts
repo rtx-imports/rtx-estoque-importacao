@@ -30,14 +30,25 @@ describe("GET /tiny/produtos", () => {
   });
 
   it("devolve os produtos encontrados", async () => {
-    vi.mocked(buscarProdutosTiny).mockResolvedValue([
-      { sku: "SKU-1", nome: "Produto 1", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: null },
-    ]);
+    vi.mocked(buscarProdutosTiny).mockResolvedValue({
+      pagina: 1,
+      totalPaginas: 1,
+      produtos: [{ sku: "SKU-1", nome: "Produto 1", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: null }],
+    });
     const response = await app.inject({ method: "GET", url: "/tiny/produtos?busca=rolo" });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual([
-      { sku: "SKU-1", nome: "Produto 1", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: null },
-    ]);
+    expect(response.json()).toEqual({
+      pagina: 1,
+      totalPaginas: 1,
+      produtos: [{ sku: "SKU-1", nome: "Produto 1", tinyId: "1", unidade: "UN", situacao: "A", tipoSugerido: null }],
+    });
+    expect(vi.mocked(buscarProdutosTiny).mock.calls[0]).toEqual(["rolo", 1]);
+  });
+
+  it("repassa o parâmetro de página", async () => {
+    vi.mocked(buscarProdutosTiny).mockResolvedValue({ pagina: 2, totalPaginas: 3, produtos: [] });
+    await app.inject({ method: "GET", url: "/tiny/produtos?busca=rolo&pagina=2" });
+    expect(vi.mocked(buscarProdutosTiny).mock.calls[0]).toEqual(["rolo", 2]);
   });
 
   it("devolve 503 quando o Tiny não está configurado", async () => {

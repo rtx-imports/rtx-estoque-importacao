@@ -10,6 +10,7 @@ describe("envDefaults", () => {
       crescimentoMensal: 1.1,
       cambio: 5.4,
       janelaMeses: 9,
+      estoqueCriticoDias: 60,
     });
   });
 

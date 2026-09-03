@@ -1,4 +1,11 @@
-export type TipoProduto = "rolinho" | "placa";
+/** Sugestão automática pelo SKU (classificarTipoPorSku) — só cobre esses dois. */
+export type TipoProdutoSugerido = "rolinho" | "placa";
+
+/** Um tipo de produto cadastrado (tela de cadastro dinâmico). */
+export interface TipoProdutoCadastrado {
+  nome: string;
+  criado_em: string;
+}
 
 export interface Fornecedor {
   id: string;
@@ -12,7 +19,8 @@ export interface Fornecedor {
   exige_pagamento_inicial: boolean;
   percentual_pagamento_inicial: number | null;
   layout_pedido: Record<string, unknown>;
-  tipo_produto_padrao: TipoProduto | null;
+  /** Tipos de produto (tipos_produto.nome) que este fornecedor vende — pode ser mais de um. */
+  tipos_produto: string[];
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -102,10 +110,12 @@ export interface PedidoComDetalhes extends Pedido {
 export interface Produto {
   sku: string;
   descricao: string;
-  fornecedor_id: string | null;
   unidades_por_caixa: number;
   custo_unit_usd: number;
-  tipo: TipoProduto | null;
+  /** Referencia tipos_produto.nome — cadastro dinâmico, não fica restrito a rolinho/placa. */
+  tipo: string | null;
+  /** Estoque atual (tabela `estoque`) — 0 quando o SKU nunca teve linha lá. */
+  estoque: number;
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -117,6 +127,7 @@ export interface Parametros {
   crescimentoMensal: number;
   cambio: number;
   janelaMeses: number;
+  estoqueCriticoDias: number;
 }
 
 export interface PtaxReferencia {
@@ -135,7 +146,23 @@ export interface TinyProduto {
   tinyId: string;
   unidade: string;
   situacao: string;
-  tipoSugerido: TipoProduto | null;
+  tipoSugerido: TipoProdutoSugerido | null;
+}
+
+export interface ResultadoBuscaTiny {
+  produtos: TinyProduto[];
+  pagina: number;
+  totalPaginas: number;
+}
+
+export interface ResultadoImportacaoCatalogoTiny {
+  totalNoTiny: number;
+  classificados: number;
+  naoClassificados: number;
+  importados: number;
+  jaExistiam: number;
+  estoqueAtualizado: number;
+  custoPreenchido: number;
 }
 
 export type AcabaTipo = "mes" | "semgiro" | "acima12";
@@ -143,16 +170,21 @@ export type AcabaTipo = "mes" | "semgiro" | "acima12";
 export interface PropostaItem {
   sku: string;
   descricao: string;
-  tipo: TipoProduto | null;
+  tipo: string | null;
   demandaPicoMensal: number;
   estoque: number;
   transito: number;
   unidadesPorCaixa: number;
   custoUnitUsd: number;
+  custoAtualUsd: number;
+  custoTransitoUsd: number;
+  widthM: number | null;
+  lengthM: number | null;
   /** Plano de compra dos próximos 7 meses (índice 0 = mês atual). */
   plan: number[];
   acabaMeses: number | null;
   acabaTipo: AcabaTipo;
+  diasEstoqueAtual: number | null;
   necessidadeAuto: number;
   necessidade: number;
   caixas: number;
