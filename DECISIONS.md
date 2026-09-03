@@ -44,13 +44,12 @@ decisão 11 abaixo.
    (resolve o antigo PENDENTE #8). RBAC só faz sentido quando existir mais de
    um perfil de uso — isso começa a partir do módulo de Pagamento (Financeiro
    entra).
-10. **Repositório `.github` da organização: criar agora**, como parte do
-    bootstrap deste projeto — primeiro repo novo do grupo desde que os
-    padrões de commit/PR foram definidos (resolve o antigo PENDENTE #5). Usar
-    exatamente os arquivos já prontos no pacote existente (CONTRIBUTING.md,
-    COMMIT_CONVENTION.md, PULL_REQUEST_TEMPLATE.md, ISSUE_TEMPLATE/,
-    CODE_OF_CONDUCT.md, profile/README.md, .gitmessage) — não gerar versões
-    novas desses templates.
+10. **Repositório `.github` da organização: já existe** (resolve o antigo
+    PENDENTE #5) — `rtx-imports/.github` no GitHub, com cópia local em
+    `Desktop\rtx-imports\.github`, contendo o pacote completo
+    (CONTRIBUTING.md, COMMIT_CONVENTION.md, PULL_REQUEST_TEMPLATE.md,
+    ISSUE_TEMPLATE/, CODE_OF_CONDUCT.md, profile/README.md). Nada a criar
+    aqui; só seguir os padrões já publicados.
 11. **"Vida fora do Supabase" é requisito de longo prazo deste projeto, não
     só uma escolha pontual do MVP.** Cada decisão futura (storage de anexos,
     autenticação, fila de jobs, etc.) deve preferir uma opção que funcione

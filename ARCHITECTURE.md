@@ -47,15 +47,14 @@ Não existe, em nenhum dos repositórios do grupo, tabela de comprovante/anexo
 nem uso de Supabase Storage (nem qualquer bucket de arquivos). Este sistema
 seria o primeiro a resolver isso — não há um padrão pronto para copiar.
 
-Não existia repositório `.github` central da organização nem
-`padroes-github.md` em nenhum dos quatro repositórios inspecionados
-(`financeiro-gbw`, `painel-gbw`, `painel-gbwv2`, `devolucoes-gbw`). A seção 0
-do prompt original presumia que esse padrão já existisse — **decisão
-confirmada**: criar `rtx-imports/.github` agora, como parte do bootstrap
-deste projeto, usando exatamente o pacote de templates já pronto
+Não existia, nos quatro repositórios inspecionados originalmente
+(`financeiro-gbw`, `painel-gbw`, `painel-gbwv2`, `devolucoes-gbw`), nenhum
+sinal de repositório `.github` central — mas ele já existe:
+`rtx-imports/.github` no GitHub (cópia local em
+`Desktop\rtx-imports\.github`), com o pacote completo de templates
 (CONTRIBUTING.md, COMMIT_CONVENTION.md, PULL_REQUEST_TEMPLATE.md,
-ISSUE_TEMPLATE/, CODE_OF_CONDUCT.md, profile/README.md, .gitmessage) — ver
-decisão 10 em DECISIONS.md.
+ISSUE_TEMPLATE/, CODE_OF_CONDUCT.md, profile/README.md). Ver decisão 10 em
+DECISIONS.md — nada a criar, só seguir os padrões já publicados.
 
 ## 3. Proposta de arquitetura para o MVP
 
