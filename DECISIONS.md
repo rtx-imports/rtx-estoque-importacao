@@ -72,6 +72,14 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     reversibilidade já prevista no desenho original. Isso não implica migrar
     `financeiro-gbw`/`painel-gbw` — essa avaliação segue separada e não deve
     ser antecipada por este projeto.
+    **Nuance importante (corrigida por Beatriz):** essa regra é sobre não
+    **aumentar banco/storage/compute** no projeto Supabase compartilhado — não
+    é sobre evitar dependência de dado entre sistemas do grupo. Os sistemas da
+    RTX já são interdependentes por natureza (painel-gbw depende do Tiny, que
+    depende do marketplace) — ler dado de venda do painel-gbw (só leitura, sem
+    escrever nem crescer o banco de lá) é só mais um elo normal dessa cadeia,
+    não uma dependência a evitar. O que continua valendo é não criar banco ou
+    storage **próprio deste sistema** dentro do Supabase compartilhado.
 12. **A decisão de compra (quanto pedir de cada SKU) passa a ser tomada
     dentro deste sistema**, não só o registro/acompanhamento do pedido já
     decidido. Confirmado por Beatriz: o processo de importação e estoque
@@ -102,9 +110,21 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     original, que dizia o contrário — confirmado por Beatriz). Durante a
     transição, **`rtx-pedidos` continua no ar em uso normal por Bruno**, sem
     nenhuma mudança lá; este projeto só lê o código dele como referência até o
-    módulo novo estar pronto e validado. O
-    escopo exato do módulo de decisão de compra (o que entra primeiro, o que
-    fica para depois) ainda não foi desenhado.
+    módulo novo estar pronto e validado.
+15. **Venda vem por leitura do painel-gbw** (mesma fonte que o `rtx-pedidos`
+    já usa) — não é uma dependência a evitar, ver nuance da decisão 11: ler
+    dado de outro sistema do grupo é normal, o que se evita é aumentar
+    banco/storage próprio no Supabase compartilhado. Ressalva de Beatriz: essa
+    leitura deve ser abstraída (não espalhar SDK/chamada direta do Supabase
+    pelo código) para poder trocar a fonte mais adiante sem reescrever o
+    módulo. Estoque e trânsito continuam sendo informados na tela/planilha
+    manualmente por enquanto, do mesmo jeito que já funciona no `rtx-pedidos`
+    hoje (Tiny e ClickUp não sincronizam de verdade lá).
+16. **Primeira versão do módulo calcula só a necessidade de compra por
+    produto** (a fórmula de reposição: demanda × cobertura − estoque −
+    trânsito). Plano de compra de 6 meses, classificação ABC e valorização de
+    estoque em 3 estágios ficam para depois — não entram nesta primeira
+    versão.
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 
@@ -138,14 +158,9 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
    diante. Nem `financeiro-gbw` nem `painel-gbw` têm hoje controle de
    permissão por usuário — não há um padrão existente para copiar; será
    construído do zero. Depende de Beatriz.
-6. **Escopo exato do módulo de decisão de compra** (decisões 12/14). O
-   sequenciamento (decisão de compra é a prioridade agora) e o destino do
-   `rtx-pedidos` durante a transição (continua em uso normal) já foram
-   decididos — falta desenhar o que exatamente entra: quais conceitos novos
-   do DATA_MODEL.md são necessários de fato (catálogo de produto/SKU, vendas
-   mensais, estoque, parâmetros de cálculo) e com que profundidade, dado que
-   a fonte de dados de venda do `rtx-pedidos` hoje é o Supabase compartilhado
-   que a decisão 11 pede pra evitar. É o próximo trabalho de desenho.
+6. ~~Escopo exato do módulo de decisão de compra~~ — resolvido pelas decisões
+   15 e 16 abaixo. Continua em aberto só o desenho técnico (schema, camadas),
+   que é o próximo passo.
 
 ## O que ainda depende de Beatriz e não deve ser assumido
 
