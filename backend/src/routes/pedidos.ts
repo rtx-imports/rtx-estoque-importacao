@@ -28,7 +28,8 @@ export async function pedidosRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Pedido não encontrado" });
     }
     const itens = await sql`SELECT * FROM pedido_itens WHERE pedido_id = ${id} ORDER BY criado_em`;
-    return { ...pedido, itens };
+    const documentos = await sql`SELECT * FROM pedido_documentos WHERE pedido_id = ${id} ORDER BY enviado_em`;
+    return { ...pedido, itens, documentos };
   });
 
   app.post("/pedidos", async (request, reply) => {
@@ -51,7 +52,7 @@ export async function pedidosRoutes(app: FastifyInstance) {
       )
       RETURNING *
     `;
-    return reply.code(201).send({ ...pedido, itens: [] });
+    return reply.code(201).send({ ...pedido, itens: [], documentos: [] });
   });
 
   app.put("/pedidos/:id", async (request, reply) => {

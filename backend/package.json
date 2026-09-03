@@ -13,13 +13,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/multipart": "^10.1.1",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.0",
     "postgres": "^3.4.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/form-data": "^2.2.1",
     "@types/node": "^22.10.5",
+    "form-data": "^4.0.6",
     "node-pg-migrate": "^7.9.1",
     "pg": "^8.13.1",
     "tsx": "^4.19.2",
