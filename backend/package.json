@@ -10,6 +10,7 @@
     "migrate": "node-pg-migrate",
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
+    "migrate:test:up": "dotenv -e .env.test -- node-pg-migrate up",
     "test": "vitest run"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@types/form-data": "^2.2.1",
     "@types/node": "^22.10.5",
+    "dotenv-cli": "^11.0.0",
     "form-data": "^4.0.6",
     "node-pg-migrate": "^7.9.1",
     "pg": "^8.13.1",
