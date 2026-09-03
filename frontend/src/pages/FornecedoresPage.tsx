@@ -19,7 +19,10 @@ const FORM_VAZIO = {
   moeda_padrao: "USD",
   exige_pagamento_inicial: false,
   percentual_pagamento_inicial: "",
+  tipo_produto_padrao: "" as "" | "rolinho" | "placa",
 };
+
+const TIPO_PRODUTO_LABEL: Record<"rolinho" | "placa", string> = { rolinho: "Rolinho", placa: "Placa" };
 
 export function FornecedoresPage() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
@@ -43,6 +46,7 @@ export function FornecedoresPage() {
       moeda_padrao: fornecedor.moeda_padrao,
       exige_pagamento_inicial: fornecedor.exige_pagamento_inicial,
       percentual_pagamento_inicial: fornecedor.percentual_pagamento_inicial?.toString() ?? "",
+      tipo_produto_padrao: fornecedor.tipo_produto_padrao ?? "",
     });
     setErro(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -66,6 +70,7 @@ export function FornecedoresPage() {
         form.exige_pagamento_inicial && form.percentual_pagamento_inicial
           ? Number(form.percentual_pagamento_inicial)
           : null,
+      tipo_produto_padrao: form.tipo_produto_padrao || null,
     };
     const onError = (error: unknown) =>
       setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao salvar fornecedor");
@@ -130,6 +135,18 @@ export function FornecedoresPage() {
               value={form.moeda_padrao}
               onChange={(e) => setForm({ ...form, moeda_padrao: e.target.value })}
             />
+          </div>
+          <div>
+            <label className={labelClass}>Tipo de produto padrão</label>
+            <select
+              className={inputClass}
+              value={form.tipo_produto_padrao}
+              onChange={(e) => setForm({ ...form, tipo_produto_padrao: e.target.value as typeof form.tipo_produto_padrao })}
+            >
+              <option value="">Nenhum</option>
+              <option value="rolinho">Rolinho</option>
+              <option value="placa">Placa</option>
+            </select>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -201,6 +218,7 @@ export function FornecedoresPage() {
                 <th className="py-2">Nome</th>
                 <th className="py-2">País</th>
                 <th className="py-2">Moeda</th>
+                <th className="py-2">Tipo padrão</th>
                 <th className="py-2">Status</th>
                 <th className="py-2" />
               </tr>
@@ -211,6 +229,9 @@ export function FornecedoresPage() {
                   <td className="py-2">{fornecedor.nome}</td>
                   <td className="py-2">{fornecedor.pais ?? "—"}</td>
                   <td className="py-2">{fornecedor.moeda_padrao}</td>
+                  <td className="py-2">
+                    {fornecedor.tipo_produto_padrao ? TIPO_PRODUTO_LABEL[fornecedor.tipo_produto_padrao] : "—"}
+                  </td>
                   <td className="py-2">
                     <span
                       className={

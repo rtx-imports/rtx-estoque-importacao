@@ -46,7 +46,41 @@ describe("GET /proposta", () => {
     const body = response.json();
     expect(body.itens).toHaveLength(1);
     expect(body.itens[0].sku).toBe("SKU-PROP-1");
+    expect(body.itens[0].plan).toHaveLength(7);
+    expect(body.itens[0].acabaTipo).toBe("semgiro"); // sem venda do painel, demanda = 0
     expect(body.totais.necessidade).toBe(body.itens.reduce((s: number, i: { necessidade: number }) => s + i.necessidade, 0));
+  });
+
+  it("deriva o trânsito da soma dos itens de pedidos embarcados/aguardando desembaraço/em desova/conferência", async () => {
+    const fornecedor = await criarFornecedor();
+    await app.inject({
+      method: "POST",
+      url: "/produtos",
+      payload: { sku: "SKU-TRANSITO", fornecedor_id: fornecedor.id },
+    });
+
+    const embarcado = (
+      await app.inject({ method: "POST", url: "/pedidos", payload: { fornecedor_id: fornecedor.id } })
+    ).json();
+    await app.inject({
+      method: "POST",
+      url: `/pedidos/${embarcado.id}/itens`,
+      payload: { item_code: "SKU-TRANSITO", descricao: "x", quantidade: 50, unidade: "un", preco_unitario: 1 },
+    });
+    await app.inject({ method: "PUT", url: `/pedidos/${embarcado.id}`, payload: { status: "embarcado" } });
+
+    // pedido ainda em rascunho não deve contar como em trânsito.
+    const rascunho = (
+      await app.inject({ method: "POST", url: "/pedidos", payload: { fornecedor_id: fornecedor.id } })
+    ).json();
+    await app.inject({
+      method: "POST",
+      url: `/pedidos/${rascunho.id}/itens`,
+      payload: { item_code: "SKU-TRANSITO", descricao: "x", quantidade: 999, unidade: "un", preco_unitario: 1 },
+    });
+
+    const response = await app.inject({ method: "GET", url: `/proposta?fornecedor_id=${fornecedor.id}` });
+    expect(response.json().itens[0].transito).toBe(50);
   });
 });
 

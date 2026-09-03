@@ -117,14 +117,97 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     banco/storage próprio no Supabase compartilhado. Ressalva de Beatriz: essa
     leitura deve ser abstraída (não espalhar SDK/chamada direta do Supabase
     pelo código) para poder trocar a fonte mais adiante sem reescrever o
-    módulo. Estoque e trânsito continuam sendo informados na tela/planilha
-    manualmente por enquanto, do mesmo jeito que já funciona no `rtx-pedidos`
-    hoje (Tiny e ClickUp não sincronizam de verdade lá).
-16. **Primeira versão do módulo calcula só a necessidade de compra por
-    produto** (a fórmula de reposição: demanda × cobertura − estoque −
-    trânsito). Plano de compra de 6 meses, classificação ABC e valorização de
-    estoque em 3 estágios ficam para depois — não entram nesta primeira
-    versão.
+    módulo.
+16. ~~Primeira versão do módulo calcula só a necessidade de compra por
+    produto... Plano de compra de 6 meses... fica para depois~~ — **superada
+    pela decisão 21**: Beatriz pediu explicitamente pra trazer o plano de 6
+    meses já nesta rodada, ao ver o padrão do `rtx-pedidos` em produção.
+    Classificação ABC e valorização de estoque em 3 estágios continuam fora
+    de escopo por enquanto (não foram pedidas).
+17. **Minimizar digitação manual sempre que der pra automatizar — princípio
+    geral do projeto, não só deste módulo.** Confirmado por Beatriz: mais mão
+    humana digitando é mais chance de erro; quando uma opção evita digitação
+    usando dado que o sistema já tem/controla, essa opção é preferida mesmo
+    que dê mais trabalho pra construir. Primeira aplicação concreta: **"em
+    trânsito" deixou de ser tabela digitada manualmente** — agora é derivado
+    ao vivo da soma dos itens de pedidos cujo status está entre `embarcado` e
+    antes de `finalizado` (`embarcado`, `aguardando_desembaraco`,
+    `em_desova`, `conferencia`). **Estoque atual continua manual por
+    enquanto** — automatizar de verdade exigiria saber também o que *sai*
+    (transferência RTX → empresa de venda), que é fase futura reservada
+    (`nf_transferencia`, decisão 6); quando essa fase existir, estoque também
+    vira derivado (entrada por pedido finalizado − saída por transferência),
+    em vez de editado na tela.
+18. **Câmbio continua sendo digitado manualmente** — não é o PTAX do BCB nem
+    dá pra vir de API de banco. Confirmado por Beatriz: hoje o valor usado é a
+    cotação comercial **comparada entre Santander e Banco do Brasil**, um
+    processo manual sem API disponível (nem Open Finance, nem portal do
+    gerente). O PTAX (API pública do BCB, sem token, mesma fonte que
+    `financeiro-gbw` já sincroniza via `pg_cron`, mas consultada aqui direto
+    da API pública, sem depender do Supabase compartilhado — decisão 11)
+    entra só como **referência ao lado do campo manual**, nunca sobrescreve o
+    valor sozinho. A tela também mostra quando o câmbio foi ajustado pela
+    última vez, com aviso se fizer mais de 24h.
+19. **Cadastro de produto busca o SKU no Tiny em vez de digitar na mão**
+    (aplicação da decisão 17) — busca ao vivo na API do Tiny v2
+    (`produtos.pesquisa.php`, somente leitura, decisão 5), sem tabela de cache
+    local: mais simples que o padrão de sincronização periódica do
+    `financeiro-gbw`, ao custo de depender da API do Tiny responder na hora.
+    Se ficar lenta/instável na prática, reavaliar para um cache local igual ao
+    `financeiro-gbw` faz. Token (`TINY_TOKEN_RTX`) é opcional — sem ele a busca
+    fica indisponível e o cadastro manual continua funcionando normalmente
+    (mesmo princípio de tolerância do `vendasPainel.ts`).
+20. **Produto é classificado automaticamente em rolinho/placa pelo próprio
+    SKU**, sem digitar a categoria na mão. Regra herdada do `rtx-pedidos`
+    (`src/routing/fornecedor.ts`): o SKU canônico do Tiny tem 14 caracteres —
+    posições 3-5 são a "linha"; linha `605` é placa, qualquer outra é
+    rolinho. `produtos.tipo` é calculado nesse momento (editável depois, pra
+    exceção). Cada fornecedor tem um `tipo_produto_padrao` opcional (dado na
+    tabela, não hardcoded — MVP_SCOPE.md já pedia "nenhum fornecedor
+    hardcoded no código"); confirmado por Beatriz que hoje **Digiflex vende
+    rolinho e Great vende placa** — isso é dado cadastrado, não regra fixa,
+    então continua valendo se um fornecedor futuro vender os dois tipos.
+    Diferente do `rtx-pedidos`, **não trouxemos a sub-separação Sunny vs.
+    Digiflex dentro de placas** (lista fixa de 11 SKUs num JSON) — nesse
+    sistema novo, cada fornecedor vende só um tipo; se isso deixar de ser
+    verdade, a tela ainda permite corrigir manualmente o SKU cadastrado
+    (o tipo sugerido nunca bloqueia o cadastro, só avisa).
+    Nova tela de **Produtos** (`/produtos`) lista o catálogo com filtro por
+    fornecedor — antes só dava pra ver produtos dentro da aba Compra.
+21. **Plano de compra de 6 meses portado do `rtx-pedidos` para dentro deste
+    módulo** — Beatriz pediu explicitamente ao ver a tela `/pedidos` em
+    produção lá (revisa a decisão 16). Motor `planejar()`
+    (`backend/src/engine/planoCompra.ts`) é a mesma matemática do
+    `rtx-pedidos` (`src/config/pedido-necessario.ts`), copiada função por
+    função com os mesmos testes de aceite ("aceite EXATO do Gustavo") — não
+    foi reimplementada do zero, pra não arriscar divergir de um cálculo já
+    validado em produção. Muda o parâmetro de cobertura: **`cobertura_alvo_dias`
+    (30 dias) foi removida** e virou `cobertura_minima_meses` (default 2,
+    igual ao `M` do rtx-pedidos) — os dois defaults antigos não eram
+    equivalentes (30 dias ≈ 1 mês vs. M=2 meses de lá), então manter os
+    valores de produção pareceu mais seguro que inventar um novo. Também
+    entra `crescimento_mensal` (o `g` de lá, default 1.10). O antigo motor
+    simples (`engine/reorder.ts`, fórmula demanda×cobertura−estoque−trânsito
+    de uma linha só) foi removido — o plano de 6 meses o substitui
+    completamente, inclusive pra decidir a necessidade do mês atual
+    (`plan[0]`) usada em "gerar pedido".
+    **Indicador Ok/Repor/Revisar por linha**: decisão de design, não cópia
+    literal — no `rtx-pedidos` esse selo (verde/amber/vermelho) sinaliza
+    **dado cadastral incompleto** (falta Item Code/preço/descrição), não
+    urgência de compra; a urgência lá é só a cor do texto na coluna "Acaba
+    Em" (vermelho ≤3 meses, amber ≤5). Beatriz pediu o indicador Ok/Repor/
+    Revisar sem essa ressalva ter sido levantada na hora, então implementei
+    com o significado que a UX sugere — **urgência de compra**, reaproveitando
+    os mesmos limiares (≤3 revisar, ≤5 repor) que já coloriam a coluna "Acaba
+    Em" — em vez do significado literal de lá (completude cadastral). Se não
+    for o que Beatriz esperava, é só avisar pra ajustar.
+    **Abas por tipo (Rolinhos/Placas)** substituem a escolha direta de
+    fornecedor na aba Decisão de Compra — usa o `tipo_produto_padrao` da
+    decisão 20 pra resolver automaticamente o fornecedor quando só um vende
+    aquele tipo (caso atual); se um tipo tiver mais de um fornecedor no
+    futuro, aparece um seletor dentro da aba. Fornecedores sem
+    `tipo_produto_padrao` aparecem numa aba "Outros" (só existe se houver
+    algum).
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 

@@ -7,6 +7,9 @@ const produtoObjectSchema = z.object({
   unidades_por_caixa: z.number().positive().default(1),
   custo_unit_usd: z.number().nonnegative().default(0),
   ativo: z.boolean().default(true),
+  // Se não vier, é calculado do SKU (ver classificarTipoPorSku) — este campo
+  // só existe pra permitir sobrescrever exceções manualmente.
+  tipo: z.enum(["rolinho", "placa"]).nullable().optional(),
 });
 
 export const produtoInputSchema = produtoObjectSchema;

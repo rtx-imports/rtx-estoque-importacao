@@ -1,8 +1,8 @@
 /**
  * Reduz a série de vendas mensais de um SKU a uma "demanda pico mensal" —
- * insumo do motor de reposição (reorder.ts). Só a estratégia `pico` (default
- * já usado em produção) entra na primeira versão — média e média móvel ficam
- * para depois (DECISIONS.md, decisão 16).
+ * insumo do motor de planejamento (planoCompra.ts). Só a estratégia `pico`
+ * (default já usado em produção) entra por enquanto — média e média móvel
+ * ficam para depois (DECISIONS.md, decisão 16).
  */
 
 export interface VendaMes {

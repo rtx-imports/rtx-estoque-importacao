@@ -31,9 +31,19 @@ o mesmo banco.
 
 ## Módulo de decisão de compra
 
-Calcula a necessidade de compra por produto (demanda × cobertura − estoque − trânsito).
-Venda é lida do banco do painel-gbw — configure `PAINEL_DATABASE_URL` em `backend/.env`
-para ativar (sem essa variável, a demanda fica em 0 em vez de quebrar, útil pra dev sem
-credencial). `LEAD_TIME_DIAS`, `COBERTURA_ALVO_DIAS`, `CAMBIO` e `JANELA_MESES` têm
-defaults sensatos e podem ser sobrescritos pela tela de Parâmetros ou pelo `.env` — ver
-`backend/.env.example`.
+Calcula, por produto, um plano de compra dos próximos 7 meses (mês atual + 6) — motor
+`planejar()` (`backend/src/engine/planoCompra.ts`), portado do `rtx-pedidos` já validado em
+produção (DECISIONS.md, decisão 21). Venda é lida do banco do painel-gbw — configure
+`PAINEL_DATABASE_URL` em `backend/.env` para ativar (sem essa variável, a demanda fica em 0
+em vez de quebrar, útil pra dev sem credencial). `LEAD_TIME_DIAS`, `COBERTURA_MINIMA_MESES`,
+`CRESCIMENTO_MENSAL`, `CAMBIO` e `JANELA_MESES` têm defaults sensatos (iguais aos do
+`rtx-pedidos`) e podem ser sobrescritos pela tela de Parâmetros ou pelo `.env` — ver
+`backend/.env.example`. O câmbio continua manual (cotação comparada entre Santander e
+Banco do Brasil — DECISIONS.md, decisão 18); a tela mostra o PTAX do BCB só como
+referência ao lado, buscado ao vivo da API pública do Banco Central.
+
+Produtos são separados em abas por tipo (Rolinhos/Placas), classificado automaticamente
+pelo SKU do Tiny (DECISIONS.md, decisão 20). O cadastro de produto busca o SKU/descrição
+direto no Tiny em vez de digitar na mão — configure `TINY_TOKEN_RTX` em `backend/.env` para
+ativar (sem ele, a busca fica indisponível e o cadastro manual continua funcionando —
+DECISIONS.md, decisão 19).

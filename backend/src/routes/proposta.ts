@@ -51,6 +51,7 @@ export async function propostaRoutes(app: FastifyInstance) {
         const valorTotal = item.necessidade * item.custoUnitUsd;
         const atributosExtra = {
           sku: item.sku,
+          tipo: item.tipo,
           demanda_pico_mensal: item.demandaPicoMensal,
           estoque: item.estoque,
           transito: item.transito,

@@ -11,6 +11,10 @@ const fornecedorObjectSchema = z.object({
   exige_pagamento_inicial: z.boolean().default(false),
   percentual_pagamento_inicial: z.number().min(0).max(100).nullable().optional(),
   layout_pedido: z.record(z.string(), z.unknown()).default({}),
+  // Tipo de produto que este fornecedor tipicamente vende (rolinho ou
+  // placa) — usado só como sugestão/aviso na busca do Tiny, nunca trava o
+  // cadastro. Sem valor = nenhuma sugestão pra esse fornecedor.
+  tipo_produto_padrao: z.enum(["rolinho", "placa"]).nullable().optional(),
 });
 
 export const fornecedorInputSchema = fornecedorObjectSchema.refine(

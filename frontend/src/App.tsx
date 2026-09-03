@@ -4,6 +4,7 @@ import { CompraPage } from "./pages/CompraPage";
 import { FornecedoresPage } from "./pages/FornecedoresPage";
 import { PedidoDetalhePage } from "./pages/PedidoDetalhePage";
 import { PedidosPage } from "./pages/PedidosPage";
+import { ProdutosPage } from "./pages/ProdutosPage";
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -29,6 +30,7 @@ export function App() {
           <span className="mr-4 text-lg font-semibold text-slate-800">RTX Imports</span>
           <NavItem to="/compra">Decisão de Compra</NavItem>
           <NavItem to="/fornecedores">Fornecedores</NavItem>
+          <NavItem to="/produtos">Produtos</NavItem>
           <NavItem to="/pedidos">Pedidos</NavItem>
         </div>
       </header>
@@ -37,6 +39,7 @@ export function App() {
           <Route path="/" element={<PedidosPage />} />
           <Route path="/compra" element={<CompraPage />} />
           <Route path="/fornecedores" element={<FornecedoresPage />} />
+          <Route path="/produtos" element={<ProdutosPage />} />
           <Route path="/pedidos" element={<PedidosPage />} />
           <Route path="/pedidos/:id" element={<PedidoDetalhePage />} />
         </Routes>

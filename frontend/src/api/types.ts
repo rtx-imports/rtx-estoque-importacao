@@ -1,3 +1,5 @@
+export type TipoProduto = "rolinho" | "placa";
+
 export interface Fornecedor {
   id: string;
   nome: string;
@@ -10,6 +12,7 @@ export interface Fornecedor {
   exige_pagamento_inicial: boolean;
   percentual_pagamento_inicial: number | null;
   layout_pedido: Record<string, unknown>;
+  tipo_produto_padrao: TipoProduto | null;
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -102,6 +105,7 @@ export interface Produto {
   fornecedor_id: string | null;
   unidades_por_caixa: number;
   custo_unit_usd: number;
+  tipo: TipoProduto | null;
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -109,21 +113,46 @@ export interface Produto {
 
 export interface Parametros {
   leadTimeDias: number;
-  coberturaAlvoDias: number;
+  coberturaMinimaMeses: number;
+  crescimentoMensal: number;
   cambio: number;
   janelaMeses: number;
 }
 
+export interface PtaxReferencia {
+  valor: number;
+  data: string; // "YYYY-MM-DD"
+}
+
+export interface ParametrosComMetadados extends Parametros {
+  cambioAtualizadoEm: string | null;
+  ptaxReferencia: PtaxReferencia | null;
+}
+
+export interface TinyProduto {
+  sku: string;
+  nome: string;
+  tinyId: string;
+  unidade: string;
+  situacao: string;
+  tipoSugerido: TipoProduto | null;
+}
+
+export type AcabaTipo = "mes" | "semgiro" | "acima12";
+
 export interface PropostaItem {
   sku: string;
   descricao: string;
+  tipo: TipoProduto | null;
   demandaPicoMensal: number;
   estoque: number;
   transito: number;
   unidadesPorCaixa: number;
   custoUnitUsd: number;
-  demandaDiaria: number;
-  coberturaTotalDias: number;
+  /** Plano de compra dos próximos 7 meses (índice 0 = mês atual). */
+  plan: number[];
+  acabaMeses: number | null;
+  acabaTipo: AcabaTipo;
   necessidadeAuto: number;
   necessidade: number;
   caixas: number;

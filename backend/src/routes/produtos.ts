@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "../db.js";
+import { classificarTipoPorSku } from "../domain/skuTipo.js";
 import { produtoInputSchema, produtoUpdateSchema } from "../schemas/produto.js";
 
 export async function produtosRoutes(app: FastifyInstance) {
@@ -44,11 +45,13 @@ export async function produtosRoutes(app: FastifyInstance) {
       }
     }
 
+    const tipo = data.tipo !== undefined ? data.tipo : classificarTipoPorSku(data.sku);
+
     const [produto] = await sql`
-      INSERT INTO produtos (sku, descricao, fornecedor_id, unidades_por_caixa, custo_unit_usd, ativo)
+      INSERT INTO produtos (sku, descricao, fornecedor_id, unidades_por_caixa, custo_unit_usd, ativo, tipo)
       VALUES (
         ${data.sku}, ${data.descricao}, ${data.fornecedor_id ?? null},
-        ${data.unidades_por_caixa}, ${data.custo_unit_usd}, ${data.ativo}
+        ${data.unidades_por_caixa}, ${data.custo_unit_usd}, ${data.ativo}, ${tipo}
       )
       RETURNING *
     `;
@@ -72,6 +75,7 @@ export async function produtosRoutes(app: FastifyInstance) {
     const unidadesPorCaixa = data.unidades_por_caixa ?? existing.unidades_por_caixa;
     const custoUnitUsd = data.custo_unit_usd ?? existing.custo_unit_usd;
     const ativo = data.ativo ?? existing.ativo;
+    const tipo = data.tipo !== undefined ? data.tipo : existing.tipo;
 
     const [produto] = await sql`
       UPDATE produtos SET
@@ -80,6 +84,7 @@ export async function produtosRoutes(app: FastifyInstance) {
         unidades_por_caixa = ${unidadesPorCaixa},
         custo_unit_usd = ${custoUnitUsd},
         ativo = ${ativo},
+        tipo = ${tipo},
         atualizado_em = now()
       WHERE sku = ${sku}
       RETURNING *

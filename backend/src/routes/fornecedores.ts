@@ -39,13 +39,13 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
       INSERT INTO fornecedores (
         nome, pais, contato_nome, contato_email, contato_telefone,
         contato_wechat, moeda_padrao, exige_pagamento_inicial,
-        percentual_pagamento_inicial, layout_pedido
+        percentual_pagamento_inicial, layout_pedido, tipo_produto_padrao
       ) VALUES (
         ${data.nome}, ${data.pais ?? null}, ${data.contato_nome ?? null},
         ${data.contato_email ?? null}, ${data.contato_telefone ?? null},
         ${data.contato_wechat ?? null}, ${data.moeda_padrao},
         ${data.exige_pagamento_inicial}, ${data.percentual_pagamento_inicial ?? null},
-        ${sql.json(asJson(data.layout_pedido))}
+        ${sql.json(asJson(data.layout_pedido))}, ${data.tipo_produto_padrao ?? null}
       )
       RETURNING *
     `;
@@ -74,6 +74,8 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
     const exigePagamentoInicial = data.exige_pagamento_inicial ?? existing.exige_pagamento_inicial;
     const percentualPagamentoInicial = data.percentual_pagamento_inicial ?? existing.percentual_pagamento_inicial;
     const layoutPedido = asJson((data.layout_pedido ?? existing.layout_pedido) as Record<string, unknown>);
+    const tipoProdutoPadrao =
+      data.tipo_produto_padrao !== undefined ? data.tipo_produto_padrao : existing.tipo_produto_padrao;
 
     const [fornecedor] = await sql`
       UPDATE fornecedores SET
@@ -87,6 +89,7 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
         exige_pagamento_inicial = ${exigePagamentoInicial},
         percentual_pagamento_inicial = ${percentualPagamentoInicial},
         layout_pedido = ${sql.json(layoutPedido)},
+        tipo_produto_padrao = ${tipoProdutoPadrao},
         atualizado_em = now()
       WHERE id = ${id}
       RETURNING *

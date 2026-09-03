@@ -4,7 +4,13 @@ import { envDefaults, mergeParams } from "../../src/config/params.js";
 describe("envDefaults", () => {
   it("usa os defaults do modelo quando o env está vazio", () => {
     const params = envDefaults({});
-    expect(params).toEqual({ leadTimeDias: 90, coberturaAlvoDias: 30, cambio: 5.4, janelaMeses: 9 });
+    expect(params).toEqual({
+      leadTimeDias: 90,
+      coberturaMinimaMeses: 2,
+      crescimentoMensal: 1.1,
+      cambio: 5.4,
+      janelaMeses: 9,
+    });
   });
 
   it("lê valores do env quando presentes", () => {
@@ -22,7 +28,7 @@ describe("mergeParams", () => {
     ]);
     expect(params.leadTimeDias).toBe(60);
     expect(params.cambio).toBe(5.5);
-    expect(params.coberturaAlvoDias).toBe(30);
+    expect(params.coberturaMinimaMeses).toBe(2);
   });
 
   it("ignora chaves desconhecidas e valores inválidos", () => {

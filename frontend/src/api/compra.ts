@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { Parametros, Pedido, Produto, Proposta } from "./types";
+import type { ParametrosComMetadados, Pedido, Produto, Proposta } from "./types";
 
 export function useProdutos(fornecedorId?: string) {
   return useQuery({
@@ -8,6 +8,10 @@ export function useProdutos(fornecedorId?: string) {
     queryFn: () => api.get<Produto[]>(`/produtos${fornecedorId ? `?fornecedor_id=${fornecedorId}` : ""}`),
     enabled: Boolean(fornecedorId),
   });
+}
+
+export function useTodosProdutos() {
+  return useQuery({ queryKey: ["produtos", "todos"], queryFn: () => api.get<Produto[]>("/produtos") });
 }
 
 export interface ProdutoFormValues {
@@ -35,17 +39,11 @@ export function useSetEstoque() {
   });
 }
 
-export function useSetEmTransito() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ sku, quantidade }: { sku: string; quantidade: number }) =>
-      api.put(`/em-transito/${sku}`, { quantidade }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["proposta"] }),
-  });
-}
-
 export function useParametros() {
-  return useQuery({ queryKey: ["parametros"], queryFn: () => api.get<Parametros>("/parametros") });
+  return useQuery({
+    queryKey: ["parametros"],
+    queryFn: () => api.get<ParametrosComMetadados>("/parametros"),
+  });
 }
 
 export function useSetParametro() {

@@ -71,4 +71,32 @@ describe("produtos", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().custo_unit_usd).toBe(2.5);
   });
+
+  it("classifica o tipo automaticamente pelo SKU ao cadastrar", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/produtos",
+      payload: { sku: "10401BRAFOS100" }, // linha 401 => rolinho
+    });
+    expect(response.json().tipo).toBe("rolinho");
+  });
+
+  it("permite sobrescrever o tipo calculado automaticamente", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/produtos",
+      payload: { sku: "30605PLMDBR60C", tipo: "rolinho" }, // linha 605 seria placa, mas força rolinho
+    });
+    expect(response.json().tipo).toBe("rolinho");
+  });
+
+  it("mantém o tipo ao editar sem informar o campo", async () => {
+    await app.inject({ method: "POST", url: "/produtos", payload: { sku: "10401BRAFOS100" } });
+    const response = await app.inject({
+      method: "PUT",
+      url: "/produtos/10401BRAFOS100",
+      payload: { custo_unit_usd: 3 },
+    });
+    expect(response.json().tipo).toBe("rolinho");
+  });
 });
