@@ -13,10 +13,9 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const isFormData = options.body instanceof FormData;
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: isFormData ? options.headers : { "Content-Type": "application/json", ...options.headers },
-  });
+  const hasBody = options.body !== undefined && options.body !== null;
+  const headers = isFormData || !hasBody ? options.headers : { "Content-Type": "application/json", ...options.headers };
+  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
