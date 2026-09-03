@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import { clsx } from "clsx";
+import { CompraPage } from "./pages/CompraPage";
 import { FornecedoresPage } from "./pages/FornecedoresPage";
 import { PedidoDetalhePage } from "./pages/PedidoDetalhePage";
 import { PedidosPage } from "./pages/PedidosPage";
@@ -26,6 +27,7 @@ export function App() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
           <span className="mr-4 text-lg font-semibold text-slate-800">RTX Imports</span>
+          <NavItem to="/compra">Decisão de Compra</NavItem>
           <NavItem to="/fornecedores">Fornecedores</NavItem>
           <NavItem to="/pedidos">Pedidos</NavItem>
         </div>
@@ -33,6 +35,7 @@ export function App() {
       <main className="mx-auto max-w-5xl px-4 py-6">
         <Routes>
           <Route path="/" element={<PedidosPage />} />
+          <Route path="/compra" element={<CompraPage />} />
           <Route path="/fornecedores" element={<FornecedoresPage />} />
           <Route path="/pedidos" element={<PedidosPage />} />
           <Route path="/pedidos/:id" element={<PedidoDetalhePage />} />

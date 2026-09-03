@@ -16,7 +16,41 @@ fornecedores 1───* pedidos 1───* pedido_itens
 empresas (RTX, BG, BRA, BW, full, cross — mesmos ids de fin_empresas)
                      │
                      └───* nf_transferencia  (reservado — fase futura)
+
+fornecedores 1───* produtos 1───? estoque
+                                1───? em_transito
+                     (parametros — chave/valor, sem relação com produto)
 ```
+
+## Módulo de decisão de compra (DECISIONS.md, decisões 12/15/16)
+
+Anterior ao módulo de Pedido no fluxo — calcula quanto comprar antes de o
+pedido em si existir. Venda **não é tabela deste banco**: é lida do painel-gbw
+(só leitura, ver `backend/src/repo/vendasPainel.ts`).
+
+### produtos
+
+| campo | tipo | nota |
+|---|---|---|
+| sku | text pk | livre por enquanto — a normalização canônica de 14 chars do `rtx-pedidos` não foi trazida (v1 mais simples) |
+| descricao | text | |
+| fornecedor_id | fk → fornecedores, nullable | direto, sem heurística de roteamento por numeração de SKU (mais simples que o `rtx-pedidos`, que infere pela linha do SKU) |
+| unidades_por_caixa | numeric | |
+| custo_unit_usd | numeric | |
+| ativo | boolean | |
+
+### estoque / em_transito
+
+Um registro por SKU, quantidade única (sem quebra por depósito/container —
+fica pra depois se for preciso). Editados manualmente na tela por enquanto
+(decisão 15) — mesmo estágio que o `rtx-pedidos` já opera hoje (Tiny e
+ClickUp não sincronizam de verdade lá).
+
+### parametros
+
+Chave/valor (`lead_time_dias`, `cobertura_alvo_dias`, `cambio`,
+`janela_meses`) — sobrescreve os defaults do `.env` em runtime, mesmo padrão
+do `rtx-pedidos`.
 
 ## fornecedores
 

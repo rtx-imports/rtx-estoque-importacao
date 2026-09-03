@@ -28,3 +28,12 @@ do dev já apagou dados reais cadastrados manualmente uma vez. Nunca aponte os d
 o mesmo banco.
 
 `npm run db:down` derruba o Postgres local quando não precisar mais dele.
+
+## Módulo de decisão de compra
+
+Calcula a necessidade de compra por produto (demanda × cobertura − estoque − trânsito).
+Venda é lida do banco do painel-gbw — configure `PAINEL_DATABASE_URL` em `backend/.env`
+para ativar (sem essa variável, a demanda fica em 0 em vez de quebrar, útil pra dev sem
+credencial). `LEAD_TIME_DIAS`, `COBERTURA_ALVO_DIAS`, `CAMBIO` e `JANELA_MESES` têm
+defaults sensatos e podem ser sobrescritos pela tela de Parâmetros ou pelo `.env` — ver
+`backend/.env.example`.

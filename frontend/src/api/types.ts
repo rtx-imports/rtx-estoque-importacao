@@ -95,3 +95,46 @@ export interface PedidoComDetalhes extends Pedido {
   itens: PedidoItem[];
   documentos: PedidoDocumento[];
 }
+
+export interface Produto {
+  sku: string;
+  descricao: string;
+  fornecedor_id: string | null;
+  unidades_por_caixa: number;
+  custo_unit_usd: number;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface Parametros {
+  leadTimeDias: number;
+  coberturaAlvoDias: number;
+  cambio: number;
+  janelaMeses: number;
+}
+
+export interface PropostaItem {
+  sku: string;
+  descricao: string;
+  demandaPicoMensal: number;
+  estoque: number;
+  transito: number;
+  unidadesPorCaixa: number;
+  custoUnitUsd: number;
+  demandaDiaria: number;
+  coberturaTotalDias: number;
+  necessidadeAuto: number;
+  necessidade: number;
+  caixas: number;
+  custoUsd: number;
+  custoBrl: number;
+  isOverride: boolean;
+}
+
+export interface Proposta {
+  fornecedor_id: string;
+  params: Parametros;
+  itens: PropostaItem[];
+  totais: { necessidade: number; custoUsd: number; custoBrl: number };
+}
