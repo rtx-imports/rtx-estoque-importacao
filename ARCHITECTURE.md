@@ -17,8 +17,11 @@
 
 ## 1. Contexto e restrições de partida
 
-- Repositório novo, separado de `financeiro-gbw` e de `rtx-pedidos` (legado,
-  não tocar). Nenhum dos dois é a base de código deste projeto.
+- Repositório novo, separado de `financeiro-gbw` e de `rtx-pedidos` (sistema
+  em produção, não legado — ver DECISIONS.md, correção de fato). Nenhum dos
+  dois é a base de código deste projeto ainda, mas a decisão 12 em
+  DECISIONS.md prevê absorver o motor de cálculo do `rtx-pedidos` como um
+  módulo novo.
 - Ambiente de teste isolado: sem credencial ou banco de produção compartilhado
   no MVP.
 - Não usar SDK proprietário de infraestrutura (evitar lock-in ao trocar de
@@ -29,13 +32,14 @@
 ## 2. O que já existe no grupo (constatado, não suposto)
 
 Levantamento feito lendo `financeiro-gbw`, `painel-gbw`/`painel-gbwv2` e o
-legado `rtx-pedidos` (todos como referência de leitura, não como base):
+`rtx-pedidos` (todos como referência de leitura até aqui — `rtx-pedidos` passa
+a ter código absorvido a partir da decisão 12 em DECISIONS.md):
 
 | Sistema | Stack | Banco | Auth | Observação |
 |---|---|---|---|---|
 | `financeiro-gbw` | React+Vite, Supabase Edge Functions (Deno) | Supabase/Postgres (projeto `ylbszminytbmnwkknixy`) | Supabase Auth, mas **um único login compartilhado** da equipe, sem papéis por usuário | Compartilha o **mesmo** projeto Supabase com `painel-gbw` |
 | `painel-gbw` (absorveu `painel-gbwv2`) | Node/Express + 2 SPAs React (Vite) | Supabase/Postgres (mesmo projeto acima) + uso direto de `pg` em alguns scripts | Senha única em cookie, sem usuário individual | Hospedado no Railway via Nixpacks |
-| `rtx-pedidos` (legado) | Fastify + Postgres/Supabase | Supabase/Postgres próprio | — | Não é um sistema de pedido completo — é uma calculadora de reposição de estoque; ver DECISIONS.md e a nota na seção 5 |
+| `rtx-pedidos` (em produção, ativo) | Fastify + Postgres/Supabase | Supabase/Postgres próprio (dados de venda hoje vêm do Supabase compartilhado do `painel-gbw`) | — | Não é um sistema de acompanhamento de pedido — é o motor de **decisão de compra** (calculadora de reposição por demanda/estoque/trânsito), usado na prática hoje pelo sócio Bruno. Ver DECISIONS.md decisão 12: este projeto vai absorver esse motor como módulo novo |
 
 Nenhum dos dois sistemas em produção usa driver Postgres puro — ambos usam
 `@supabase/supabase-js`. A regra "não usar SDK proprietário" (seção 0) diverge
@@ -65,8 +69,8 @@ visual com o resto do grupo — como um novo pacote, sem importar código do
 `painel-gbw` diretamente.
 
 ### 3.2 Backend
-API Node.js pequena (Fastify, seguindo o padrão já usado no `rtx-pedidos`
-legado, que funcionou bem como limite de sistema — ver nota "Tiny é somente
+API Node.js pequena (Fastify, seguindo o padrão já usado no `rtx-pedidos`,
+que funcionou bem como limite de sistema — ver nota "Tiny é somente
 leitura" na seção 5). Acesso a banco via driver Postgres padrão (`postgres.js`
 ou `pg`), **não** via SDK do Supabase — cumprindo a regra 0 mesmo divergindo
 do padrão atual do grupo.
@@ -117,7 +121,7 @@ simples fora do Supabase que `financeiro-gbw` consulta/chama — avaliando à
 princípio de longo prazo na seção 0) ou não.
 
 ### 3.7 ClickUp
-Nenhuma integração no MVP (módulo de Pedido não depende do board). O legado
+Nenhuma integração no MVP (módulo de Pedido não depende do board). O
 `rtx-pedidos` tentou uma integração de leitura via API do ClickUp para
 espelhar status de embarque e deixou isso como scaffold nunca confirmado
 funcionando de fato — não é um caminho testado, não deve ser copiado sem
@@ -127,8 +131,7 @@ fase (pagamento em diante) começarem. **[PENDENTE]** (era #6).
 ### 3.8 Tiny ERP
 Fora do escopo do MVP (Pedido não toca estoque). Quando entrar (fase de
 conferência/entrada em estoque), manter a mesma regra que funcionou bem no
-`rtx-pedidos` legado: **Tiny é somente leitura**, nunca escrito por este
-sistema.
+`rtx-pedidos`: **Tiny é somente leitura**, nunca escrito por este sistema.
 
 ## 4. O que este desenho deixa em aberto de propósito
 

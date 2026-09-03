@@ -12,15 +12,29 @@ storage colocado lá contribui para o mesmo custo que já está subindo sem
 controle. Por isso este sistema **não pode aumentar essa dependência** — ver
 decisão 11 abaixo.
 
+## Correção de um fato registrado errado
+
+**`rtx-pedidos` NÃO é legado nem está fora de escopo** — correção às decisões 1
+e 5 abaixo (que o classificavam assim). Investigação mostrou: último commit é
+recente, o sistema **está em produção no Railway agora**, e é usado **na
+prática** para a decisão de compra (confirmado por Beatriz). Um commit recente
+de Gustavo (sócio responsável pela parte de desenvolvimento, junto com
+Beatriz) já tinha começado a consolidar o projeto para migrá-lo para a org
+`rtx-imports` — a mesma direção que este projeto está tomando agora, de forma
+independente. Ver decisão 12 abaixo para o que isso muda no escopo.
+
 ## Decididas
 
 1. **Repositório novo e separado** de `financeiro-gbw` e de
-   `C:\Users\Beatriz BW\Desktop\projetos-antigos\rtx-pedidos` (legado, fora de
-   escopo). Nenhum código foi copiado de nenhum dos dois. Repositório GitHub
-   criado em `rtx-imports/rtx-estoque-importacao`.
+   `C:\Users\Beatriz BW\Desktop\projetos-antigos\rtx-pedidos` (sistema em
+   produção, não legado — ver correção acima e decisão 12). Nenhum código foi
+   copiado de nenhum dos dois ainda. Repositório GitHub criado em
+   `rtx-imports/rtx-estoque-importacao`.
 2. **MVP = módulo de Pedido apenas**: cadastro de fornecedores, criação de
    pedido com itens, exportação da planilha no formato do fornecedor, anexo da
-   invoice proforma. Nenhuma outra fase entra nesta iteração.
+   invoice proforma. Nenhuma outra fase entra nesta iteração — decisão 12
+   adiciona um módulo novo (decisão de compra), mas não muda o que o módulo de
+   Pedido em si faz.
 3. **Schema de item de pedido é flexível por fornecedor**, não um conjunto
    fixo de colunas — confirmado pelos dois exemplos reais de proforma
    recebidos (rolos vs. placas têm estruturas de item completamente
@@ -29,8 +43,9 @@ decisão 11 abaixo.
    observações por fase, não um campo único por pedido) — réplica intencional
    da estrutura do ClickUp atual, mesmo que o MVP só popule a fase `pedido`.
 5. **Tiny ERP é somente leitura** para este sistema, quando a integração
-   entrar (fora do MVP) — regra que funcionou bem no `rtx-pedidos` legado e
-   evita risco de o novo sistema escrever no ERP por engano.
+   entrar (fora do MVP) — regra que funcionou bem no `rtx-pedidos` (ver
+   correção acima) e evita risco de o novo sistema escrever no ERP por
+   engano.
 6. **NF de transferência RTX ↔ empresa de venda é etapa obrigatória**, não
    opcional, quando essa fase for implementada (fora do MVP).
 7. **Banco do MVP: Postgres add-on do Railway (isolado), não Supabase**
@@ -57,6 +72,20 @@ decisão 11 abaixo.
     reversibilidade já prevista no desenho original. Isso não implica migrar
     `financeiro-gbw`/`painel-gbw` — essa avaliação segue separada e não deve
     ser antecipada por este projeto.
+12. **A decisão de compra (quanto pedir de cada SKU) passa a ser tomada
+    dentro deste sistema**, não só o registro/acompanhamento do pedido já
+    decidido. Confirmado por Beatriz: o processo de importação e estoque
+    começa pela decisão do sócio Bruno sobre quanto comprar — isso precisa
+    estar aqui, não num sistema à parte. Na prática isso significa absorver o
+    motor de cálculo do `rtx-pedidos` (fórmula de reposição por demanda ×
+    cobertura − estoque − trânsito, plano de compra mês a mês, classificação
+    ABC — todas funções puras, testadas, sem acoplamento a infraestrutura) como
+    um módulo novo, **anterior** ao módulo de Pedido no fluxo. Não trazer a
+    parte de sincronização do `rtx-pedidos` (Tiny desligado, scraping do
+    ClickUp, arquivos JSON manuais no volume do Railway, dependência do
+    Supabase compartilhado para dado de venda) — é o tipo de acoplamento que a
+    decisão 11 já descartou. Escopo exato (o que entra primeiro, o que fica
+    para depois) ainda não foi definido — ver pendência nova abaixo.
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 
@@ -75,20 +104,29 @@ decisão 11 abaixo.
    relevante a partir da fase de Pagamento (fora do MVP).
 3. **ClickUp — migrar, integrar (leitura via API) ou paralelo?** Confirmado
    que segue adiado para quando os módulos de fase (pagamento em diante)
-   começarem — não usar o scaffold não confirmado do `rtx-pedidos` legado sem
-   revisão.
-4. **Formato exato da planilha de exportação do pedido.** Os dois arquivos
-   enviados (`DO260623318_pedido inicial rolos.xlsx`,
-   `PI 26283_Pedido inicial_placas.xlsx`) são as **proforma invoices que os
-   fornecedores retornam**, no formato deles — ainda não vi o formato que a
-   RTX usa para *enviar* a quantidade pedida ao fornecedor. É o mesmo arquivo
-   preenchido de volta, ou existe um modelo de saída diferente que a RTX
-   produz? Depende de Beatriz (enviar em separado).
+   começarem — não usar o scaffold de integração com ClickUp do `rtx-pedidos`
+   sem revisão (nunca foi confirmado funcionando).
+4. **Formato exato da planilha de exportação do pedido — pista forte
+   encontrada, falta confirmar.** Os dois arquivos enviados
+   (`DO260623318_pedido inicial rolos.xlsx`, `PI 26283_Pedido inicial_placas.xlsx`)
+   são as proforma invoices que os fornecedores retornam, não o formato de
+   envio da RTX. O `rtx-pedidos` já gera uma planilha `.xlsx` no layout da aba
+   "Container" que a empresa usa hoje para mandar pedido ao fornecedor —
+   provavelmente é essa a resposta, mas precisa de confirmação de Beatriz
+   antes de assumir como definitivo.
 5. **Usuários e permissões por fase** (importação, financeiro, estoque, RH) —
    quem serão e quais níveis de acesso, a partir do módulo de Pagamento em
    diante. Nem `financeiro-gbw` nem `painel-gbw` têm hoje controle de
    permissão por usuário — não há um padrão existente para copiar; será
    construído do zero. Depende de Beatriz.
+6. **Escopo e sequenciamento do módulo de decisão de compra** (decisão 12).
+   Absorver o motor de cálculo do `rtx-pedidos` implica conceitos novos no
+   DATA_MODEL.md que não existem hoje (catálogo de produto/SKU, vendas
+   mensais, estoque, parâmetros de cálculo) — não é uma extensão pequena do
+   módulo de Pedido. Ainda não decidido: isso entra antes de terminar de
+   validar o módulo de Pedido atual, ou depois? O `rtx-pedidos` continua em uso
+   em paralelo durante a transição, ou é substituído de uma vez? Depende de
+   Beatriz.
 
 ## O que ainda depende de Beatriz e não deve ser assumido
 
