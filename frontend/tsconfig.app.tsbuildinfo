@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/client.ts","./src/api/fornecedores.ts","./src/api/pedidos.ts","./src/api/types.ts","./src/pages/fornecedorespage.tsx","./src/pages/pedidodetalhepage.tsx","./src/pages/pedidospage.tsx"],"version":"5.9.3"}
