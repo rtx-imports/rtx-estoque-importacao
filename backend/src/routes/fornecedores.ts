@@ -1,6 +1,15 @@
 import type { FastifyInstance } from "fastify";
+import type postgres from "postgres";
 import { sql } from "../db.js";
 import { fornecedorInputSchema, fornecedorUpdateSchema } from "../schemas/fornecedor.js";
+
+/**
+ * `layout_pedido` chega do zod como `Record<string, unknown>` — já validado
+ * como JSON pelo corpo da requisição, mas o tipo `JSONValue` do postgres.js
+ * exige essa conversão explícita porque `unknown` não prova estruturalmente
+ * que é serializável.
+ */
+const asJson = (value: Record<string, unknown>) => value as postgres.JSONValue;
 
 export async function fornecedoresRoutes(app: FastifyInstance) {
   app.get("/fornecedores", async (request) => {
@@ -36,7 +45,7 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
         ${data.contato_email ?? null}, ${data.contato_telefone ?? null},
         ${data.contato_wechat ?? null}, ${data.moeda_padrao},
         ${data.exige_pagamento_inicial}, ${data.percentual_pagamento_inicial ?? null},
-        ${sql.json(data.layout_pedido)}
+        ${sql.json(asJson(data.layout_pedido))}
       )
       RETURNING *
     `;
@@ -45,30 +54,43 @@ export async function fornecedoresRoutes(app: FastifyInstance) {
 
   app.put("/fornecedores/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const [existing] = await sql`SELECT * FROM fornecedores WHERE id = ${id}`;
+    if (!existing) {
+      return reply.code(404).send({ error: "Fornecedor não encontrado" });
+    }
     const parsed = fornecedorUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: parsed.error.flatten() });
     }
     const data = parsed.data;
-    if (Object.keys(data).length === 0) {
-      return reply.code(400).send({ error: "Nenhum campo para atualizar" });
-    }
 
-    const setClauses = Object.entries(data).map(([key, value]) => {
-      const column = sql(key);
-      return key === "layout_pedido" ? sql`${column} = ${sql.json(value as Record<string, unknown>)}` : sql`${column} = ${value}`;
-    });
+    const nome = data.nome ?? existing.nome;
+    const pais = data.pais ?? existing.pais;
+    const contatoNome = data.contato_nome ?? existing.contato_nome;
+    const contatoEmail = data.contato_email ?? existing.contato_email;
+    const contatoTelefone = data.contato_telefone ?? existing.contato_telefone;
+    const contatoWechat = data.contato_wechat ?? existing.contato_wechat;
+    const moedaPadrao = data.moeda_padrao ?? existing.moeda_padrao;
+    const exigePagamentoInicial = data.exige_pagamento_inicial ?? existing.exige_pagamento_inicial;
+    const percentualPagamentoInicial = data.percentual_pagamento_inicial ?? existing.percentual_pagamento_inicial;
+    const layoutPedido = asJson((data.layout_pedido ?? existing.layout_pedido) as Record<string, unknown>);
 
     const [fornecedor] = await sql`
-      UPDATE fornecedores
-      SET ${setClauses.reduce((acc, clause) => sql`${acc}, ${clause}`)}, atualizado_em = now()
+      UPDATE fornecedores SET
+        nome = ${nome},
+        pais = ${pais},
+        contato_nome = ${contatoNome},
+        contato_email = ${contatoEmail},
+        contato_telefone = ${contatoTelefone},
+        contato_wechat = ${contatoWechat},
+        moeda_padrao = ${moedaPadrao},
+        exige_pagamento_inicial = ${exigePagamentoInicial},
+        percentual_pagamento_inicial = ${percentualPagamentoInicial},
+        layout_pedido = ${sql.json(layoutPedido)},
+        atualizado_em = now()
       WHERE id = ${id}
       RETURNING *
     `;
-
-    if (!fornecedor) {
-      return reply.code(404).send({ error: "Fornecedor não encontrado" });
-    }
     return fornecedor;
   });
 
