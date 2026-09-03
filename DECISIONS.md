@@ -84,8 +84,15 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     parte de sincronização do `rtx-pedidos` (Tiny desligado, scraping do
     ClickUp, arquivos JSON manuais no volume do Railway, dependência do
     Supabase compartilhado para dado de venda) — é o tipo de acoplamento que a
-    decisão 11 já descartou. Escopo exato (o que entra primeiro, o que fica
-    para depois) ainda não foi definido — ver pendência nova abaixo.
+    decisão 11 já descartou.
+13. **Sequenciamento: terminar de validar o módulo de Pedido primeiro**
+    (testar pedidos/itens/documentos na tela, resolver a exportação de
+    planilha), só depois começar o módulo de decisão de compra da decisão 12
+    — confirmado por Beatriz. Durante a transição, **`rtx-pedidos` continua no
+    ar em uso normal por Bruno**, sem nenhuma mudança lá; este projeto só lê o
+    código dele como referência até o módulo novo estar pronto e validado. O
+    escopo exato do módulo de decisão de compra (o que entra primeiro, o que
+    fica para depois) ainda não foi desenhado.
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 
@@ -119,14 +126,14 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
    diante. Nem `financeiro-gbw` nem `painel-gbw` têm hoje controle de
    permissão por usuário — não há um padrão existente para copiar; será
    construído do zero. Depende de Beatriz.
-6. **Escopo e sequenciamento do módulo de decisão de compra** (decisão 12).
-   Absorver o motor de cálculo do `rtx-pedidos` implica conceitos novos no
-   DATA_MODEL.md que não existem hoje (catálogo de produto/SKU, vendas
-   mensais, estoque, parâmetros de cálculo) — não é uma extensão pequena do
-   módulo de Pedido. Ainda não decidido: isso entra antes de terminar de
-   validar o módulo de Pedido atual, ou depois? O `rtx-pedidos` continua em uso
-   em paralelo durante a transição, ou é substituído de uma vez? Depende de
-   Beatriz.
+6. **Escopo exato do módulo de decisão de compra** (decisão 12/13). O
+   sequenciamento (Pedido primeiro) e o destino do `rtx-pedidos` durante a
+   transição (continua em uso normal) já foram decididos — falta desenhar o
+   que exatamente entra: quais conceitos novos do DATA_MODEL.md são
+   necessários de fato (catálogo de produto/SKU, vendas mensais, estoque,
+   parâmetros de cálculo) e com que profundidade, dado que a fonte de dados
+   de venda do `rtx-pedidos` hoje é o Supabase compartilhado que a decisão 11
+   pede pra evitar. Só será desenhado quando essa fase começar.
 
 ## O que ainda depende de Beatriz e não deve ser assumido
 
