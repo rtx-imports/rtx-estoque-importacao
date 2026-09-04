@@ -5,6 +5,7 @@ import { useParametros } from "./api/compra";
 import { CompraPage } from "./pages/CompraPage";
 import { EstoquePage } from "./pages/EstoquePage";
 import { FornecedoresPage } from "./pages/FornecedoresPage";
+import { InicioPage } from "./pages/InicioPage";
 import { PedidoDetalhePage } from "./pages/PedidoDetalhePage";
 import { PedidosPage } from "./pages/PedidosPage";
 import { PrecosFornecedorPage } from "./pages/PrecosFornecedorPage";
@@ -15,6 +16,7 @@ function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <NavLink
       to={to}
+      end={to === "/"}
       className={({ isActive }) =>
         clsx(
           "rounded-lg border-l-2 border-transparent px-3 py-2 text-[13.5px] font-medium text-slate-300",
@@ -105,6 +107,9 @@ export function App() {
         </div>
 
         <nav className="flex flex-col gap-0.5">
+          <NavItem to="/">Início</NavItem>
+        </nav>
+        <nav className="flex flex-col gap-0.5">
           <div className="px-2.5 pb-1 text-[10.5px] uppercase tracking-[0.1em] text-muted-rtx">Compras</div>
           <NavItem to="/compra">Decisão de Compra</NavItem>
           <NavItem to="/pedidos">Pedidos</NavItem>
@@ -129,7 +134,7 @@ export function App() {
         </header>
         <main className="px-7 py-6">
           <Routes>
-            <Route path="/" element={<PedidosPage />} />
+            <Route path="/" element={<InicioPage />} />
             <Route path="/compra" element={<CompraPage />} />
             <Route path="/fornecedores" element={<FornecedoresPage />} />
             <Route path="/produtos" element={<ProdutosPage />} />

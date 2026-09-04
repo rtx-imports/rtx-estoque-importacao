@@ -150,3 +150,15 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   valores de enum (`invoice_proforma`, `pagamento_inicial`, ...) por texto
   legível no formulário e na tabela de documentos — os valores salvos no
   banco continuam os mesmos, só a exibição mudou.
+- [x] **Página Início** — feito em 04/09/2026 (`frontend/src/pages/InicioPage.tsx`,
+  rota `/`, item de menu próprio acima de "Compras"), a partir de rascunho
+  aprovado no Artifact "Sistema Visual RTX". Painel consolidado, tudo com
+  dado real (não mockado): Saúde do estoque/Produtos críticos/Rupturas
+  previstas/Cobertura média agregados somando a proposta de cada
+  fornecedor ativo no cliente (não existe endpoint de "proposta de
+  todos"); Pedidos por status (contagem real via `usePedidos()` sem
+  filtro, cores de `statusColor.ts`); Câmbio (mesmo dado do cabeçalho);
+  Sincronização de estoque (produtos com `estoque != null` sobre o total).
+  "Estoque consolidado" e "Estoque por empresa" (RTX/BG/BW/BRA) ficam
+  como placeholder tracejado com "—", já que esses módulos não existem
+  ainda — não inventar dado.
