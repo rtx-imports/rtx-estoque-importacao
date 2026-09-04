@@ -14,6 +14,7 @@ import {
   useUploadDocumento,
 } from "../api/pedidos";
 import { FASE_DOCUMENTO_LABEL, FASES_DOCUMENTO, PEDIDO_STATUS, PEDIDO_STATUS_LABEL, TIPO_DOCUMENTO_LABEL, TIPOS_DOCUMENTO } from "../api/types";
+import { ConceitoBanner } from "./ConceitoBanner";
 import { COR_STATUS } from "./pedidos/statusColor";
 
 const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
@@ -62,6 +63,7 @@ export function PedidoDetalhePage() {
       </section>
 
       <ChecklistSection pedidoId={pedido.id} checklist={pedido.checklist} />
+      <PedidoInicialFinalSection />
       <ItensSection pedidoId={pedido.id} itens={pedido.itens} />
       <DocumentosSection pedidoId={pedido.id} documentos={pedido.documentos} />
     </div>
@@ -207,6 +209,57 @@ function ChecklistSection({
           })}
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * Pedido Inicial × Pedido Final — esclarecido por Beatriz em 04/09/2026,
+ * diferente de "Preços por Fornecedor" (aquela é referência geral; esta é
+ * dado específico deste pedido). Retoma a ideia de versionamento já
+ * registrada no início da sessão (Planilha_Espelho_Pedidos.xlsx, aba
+ * Notas): quantidade pedida no início vs. quantidade real depois que a
+ * Invoice Comercial sai (fornecedor ajusta pra fechar container cheio) —
+ * editável, sem sobrescrever a versão inicial, pra facilitar conferência
+ * na desova e controle de estoque. Confirmado que fica aqui dentro do
+ * pedido, separado da visão Kanban/Lista de Pedidos. Ainda é
+ * placeholder: falta decidir o modelo de dado (pedido_itens hoje não
+ * distingue inicial/final) antes de implementar de verdade.
+ */
+function PedidoInicialFinalSection() {
+  const linhasExemplo = [
+    { item: "DG3111G — Self Adhesive Vinyl Glossy", inicial: 1600, final: null as number | null },
+    { item: "DC3000 — Colorful Vinyl, Black Matte", inicial: 3500, final: null as number | null },
+  ];
+
+  return (
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
+      <h2 className="mb-3 text-sm font-semibold text-ink">Pedido Inicial × Pedido Final</h2>
+
+      <ConceitoBanner>
+        Reservado (ver TODO.md) — vai permitir editar a quantidade final por item quando a Invoice Comercial sair,
+        mantendo a quantidade inicial visível (não sobrescreve). Falta decidir o modelo de dado antes de ligar ao
+        backend; os valores abaixo são exemplo.
+      </ConceitoBanner>
+
+      <table className="mt-3 w-full text-left text-sm opacity-60">
+        <thead>
+          <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
+            <th className="py-2">Item</th>
+            <th className="py-2">Pedido inicial</th>
+            <th className="py-2">Pedido final</th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhasExemplo.map((linha) => (
+            <tr key={linha.item} className="border-b border-border-rtx last:border-0">
+              <td className="py-2">{linha.item}</td>
+              <td className="py-2">{linha.inicial}</td>
+              <td className="py-2">{linha.final ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

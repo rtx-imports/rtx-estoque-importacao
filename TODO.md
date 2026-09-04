@@ -182,3 +182,22 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   Badges semânticos fixos (bg-emerald-100 etc., cores de status/ABC/XYZ)
   não ganharam variante dark ainda — ficam legíveis mas não "elegantes"
   no escuro; ajustar se incomodar no uso real.
+- [ ] **Planilha "Pedido Inicial × Pedido Final" (editável, com histórico)
+  dentro da página de detalhe do pedido** — esclarecido por Beatriz em
+  04/09/2026, é diferente da página "Preços por Fornecedor" (aquela é
+  referência geral por fornecedor; esta é dado específico de cada
+  pedido). Retoma a ideia de versionamento já registrada bem no início da
+  sessão (`Planilha_Espelho_Pedidos.xlsx`, aba Notas, itens 6-7, em
+  `material de apoio`): quando o pedido é criado, gera uma "foto" das
+  quantidades (pedido inicial); quando a Invoice Comercial sai, o
+  fornecedor normalmente ajusta a quantidade pra fechar container cheio
+  — precisa editar manualmente pra registrar o pedido final, **mantendo
+  a versão inicial visível** (não sobrescrever), pra facilitar a
+  conferência na desova e o controle de estoque. Confirmado por Beatriz:
+  fica **dentro de `PedidoDetalhePage.tsx`**, como seção própria (junto
+  de Checklist/Itens/Documentos) — **separada** da visão Kanban/Lista de
+  `PedidosPage.tsx` (aquela é overview de todos os pedidos, não o lugar
+  de editar quantidade de um pedido específico). Ainda não desenhado:
+  precisa decidir o modelo de dado (`pedido_itens` hoje não tem conceito
+  de "inicial" vs "final" — só uma lista de itens; é mudança de schema,
+  não só de tela) antes de implementar.
