@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import Fastify from "fastify";
 import { estoqueRoutes } from "./routes/estoque.js";
@@ -13,6 +14,13 @@ import { tiposProdutoRoutes } from "./routes/tiposProduto.js";
 
 export function buildApp() {
   const app = Fastify({ logger: !process.env.VITEST });
+
+  // Backend e frontend são serviços separados em produção (ex. Railway), sem
+  // proxy reverso — precisa CORS. CORS_ORIGIN é opcional (lista separada por
+  // vírgula); sem ela, libera geral — aceitável pro ambiente de teste atual,
+  // reavaliar quando houver domínio fixo de produção.
+  const corsOrigin = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim());
+  app.register(cors, { origin: corsOrigin ?? true });
 
   app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
 

@@ -1,4 +1,8 @@
-const BASE_URL = "/api";
+// Em dev, "/api" é reescrito pelo proxy do Vite (vite.config.ts) pro backend
+// local. Em produção (backend e frontend são serviços Railway separados, sem
+// proxy reverso na frente do frontend estático), VITE_API_URL aponta direto
+// pra URL pública do backend — setado como variável de build no Railway.
+const BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 export class ApiError extends Error {
   status: number;
