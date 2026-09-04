@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useParametros, useProposta, useSetParametro } from "../api/compra";
+import { useProposta } from "../api/compra";
 import { useFornecedores } from "../api/fornecedores";
 import { useTiposProduto } from "../api/tiposProduto";
 import { CurvaAbcTab } from "./decisaoCompra/CurvaAbcTab";
 import { CurvaXyzTab } from "./decisaoCompra/CurvaXyzTab";
-import { formatarData, formatarDataHora } from "./decisaoCompra/format";
 import { GradePrincipal } from "./decisaoCompra/GradePrincipal";
 import { KpiCards } from "./decisaoCompra/KpiCards";
+import { ParametrosSection } from "./decisaoCompra/ParametrosSection";
 import { RevisaoDrawer } from "./decisaoCompra/RevisaoDrawer";
 import { SimulacoesTab } from "./decisaoCompra/SimulacoesTab";
 
@@ -102,92 +102,6 @@ export function CompraPage() {
 
       {fornecedor && <DecisaoCompraFornecedor fornecedorId={fornecedor.id} fornecedorNome={fornecedor.nome} onPedidoGerado={(id) => navigate(`/pedidos/${id}`)} />}
     </div>
-  );
-}
-
-function ParametrosSection() {
-  const { data: parametros } = useParametros();
-  const setParametro = useSetParametro();
-  const [aberto, setAberto] = useState(false);
-
-  if (!parametros) return null;
-
-  const campos: { chave: string; label: string; valor: number }[] = [
-    { chave: "lead_time_dias", label: "Lead time (dias)", valor: parametros.leadTimeDias },
-    { chave: "cobertura_minima_meses", label: "Cobertura mínima (meses)", valor: parametros.coberturaMinimaMeses },
-    { chave: "crescimento_mensal", label: "Crescimento mensal (fator, ex: 1.10 = +10%)", valor: parametros.crescimentoMensal },
-    { chave: "cambio", label: "Câmbio", valor: parametros.cambio },
-    { chave: "janela_meses", label: "Janela de venda (meses)", valor: parametros.janelaMeses },
-    {
-      chave: "estoque_critico_dias",
-      label: "Estoque crítico (dias)",
-      valor: parametros.estoqueCriticoDias,
-    },
-  ];
-
-  const cambioDesatualizado =
-    !parametros.cambioAtualizadoEm ||
-    Date.now() - new Date(parametros.cambioAtualizadoEm).getTime() > 24 * 60 * 60 * 1000;
-
-  return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
-      <button onClick={() => setAberto(!aberto)} className="text-sm font-semibold text-ink">
-        Parâmetros do cálculo {aberto ? "▲" : "▼"}
-      </button>
-      {aberto && (
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {campos.map((campo) => {
-            const salvandoEste = setParametro.isPending && setParametro.variables?.chave === campo.chave;
-            const salvoEste =
-              setParametro.isSuccess && !setParametro.isPending && setParametro.variables?.chave === campo.chave;
-            return (
-            <div key={campo.chave}>
-              <label className={labelClass}>
-                {campo.label} {salvandoEste && <span className="text-gold-dark">salvando…</span>}
-                {salvoEste && <span className="text-emerald-600">✓ salvo</span>}
-              </label>
-              <input
-                type="number"
-                step="any"
-                className={inputClass}
-                defaultValue={campo.valor}
-                onKeyDown={(e) => {
-                  // Enter salva na hora — sem isso, quem digita e aperta Enter (esperando
-                  // que já tenha valido) e não clica em outro campo nunca dispara o onBlur,
-                  // então o valor novo nunca chega a ser salvo nem a refletir na grade.
-                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                }}
-                onBlur={(e) => {
-                  const valor = e.target.value;
-                  if (valor && Number(valor) !== campo.valor) {
-                    setParametro.mutate({ chave: campo.chave, valor });
-                  }
-                }}
-              />
-              {campo.chave === "cambio" && (
-                <div className="mt-1 space-y-0.5 text-xs">
-                  <p className="text-muted-rtx">Comparar cotação comercial entre Santander e Banco do Brasil.</p>
-                  <p className="text-muted-rtx">
-                    PTAX BCB (referência):{" "}
-                    {parametros.ptaxReferencia
-                      ? `R$ ${parametros.ptaxReferencia.valor.toFixed(4)} (${formatarData(parametros.ptaxReferencia.data)})`
-                      : "indisponível"}
-                  </p>
-                  <p className={cambioDesatualizado ? "font-medium text-amber-600" : "text-muted-rtx"}>
-                    {parametros.cambioAtualizadoEm
-                      ? `Ajustado em ${formatarDataHora(parametros.cambioAtualizadoEm)}${
-                          cambioDesatualizado ? " — confira se ainda vale" : ""
-                        }`
-                      : "Nunca ajustado manualmente — usando valor padrão do sistema"}
-                  </p>
-                </div>
-              )}
-            </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
   );
 }
 

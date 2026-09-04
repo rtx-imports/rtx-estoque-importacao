@@ -162,3 +162,13 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   "Estoque consolidado" e "Estoque por empresa" (RTX/BG/BW/BRA) ficam
   como placeholder tracejado com "—", já que esses módulos não existem
   ainda — não inventar dado.
+- [x] **Páginas Configurações e Usuários** — feito em 04/09/2026, a pedido
+  de Beatriz ("faltou configurações e usuários"). Configurações
+  (`ConfiguracoesPage.tsx`) é dado real: extraí `ParametrosSection` de
+  dentro de `CompraPage.tsx` pra `decisaoCompra/ParametrosSection.tsx`
+  (aceita a prop `semToggle` — sempre aberta em Configurações, continua
+  recolhida por padrão dentro da Decisão de Compra, mesmo comportamento
+  de sempre) — não duplica a lógica de salvar/câmbio/PTAX. Usuários
+  (`UsuariosPage.tsx`) é conceito/placeholder — autenticação real não
+  existe (ver item "Suporte a mais de um usuário" acima), banner deixa
+  isso explícito. Novo grupo "Sistema" no rodapé da sidebar.

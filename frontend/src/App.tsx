@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { clsx } from "clsx";
 import { useParametros } from "./api/compra";
 import { CompraPage } from "./pages/CompraPage";
+import { ConfiguracoesPage } from "./pages/ConfiguracoesPage";
 import { EstoquePage } from "./pages/EstoquePage";
 import { FornecedoresPage } from "./pages/FornecedoresPage";
 import { InicioPage } from "./pages/InicioPage";
@@ -11,6 +12,7 @@ import { PedidosPage } from "./pages/PedidosPage";
 import { PrecosFornecedorPage } from "./pages/PrecosFornecedorPage";
 import { ProdutosPage } from "./pages/ProdutosPage";
 import { RastreamentoPage } from "./pages/RastreamentoPage";
+import { UsuariosPage } from "./pages/UsuariosPage";
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -122,6 +124,11 @@ export function App() {
           <div className="px-2.5 pb-1 text-[10.5px] uppercase tracking-[0.1em] text-muted-rtx">Estoque</div>
           <NavItem to="/estoque">Visão Geral</NavItem>
         </nav>
+        <nav className="mt-auto flex flex-col gap-0.5">
+          <div className="px-2.5 pb-1 text-[10.5px] uppercase tracking-[0.1em] text-muted-rtx">Sistema</div>
+          <NavItem to="/configuracoes">Configurações</NavItem>
+          <NavItem to="/usuarios">Usuários</NavItem>
+        </nav>
       </aside>
 
       <div className="flex min-w-0 flex-col">
@@ -143,6 +150,8 @@ export function App() {
             <Route path="/rastreamento" element={<RastreamentoPage />} />
             <Route path="/precos" element={<PrecosFornecedorPage />} />
             <Route path="/estoque" element={<EstoquePage />} />
+            <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="/usuarios" element={<UsuariosPage />} />
           </Routes>
         </main>
       </div>
