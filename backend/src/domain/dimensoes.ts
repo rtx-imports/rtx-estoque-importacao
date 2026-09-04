@@ -33,7 +33,11 @@ const PLACAS: Record<string, PlacaDeParaEntry> = placasDimensoesRaw as Record<st
 function dimensaoRolinho(sku: string): Dimensao | null {
   if (sku.length !== 14) return null;
   const lengthM = Number.parseInt(sku.slice(0, 2), 10);
-  const widthMatch = sku.slice(11).match(/^(\d{2,3})C$/);
+  // O "C" final é opcional: confirmado batendo com a descrição de vários produtos
+  // (ex. "01105BLKOUT100" = "Adesivo Vinil Blackout 1m x 1m", "02101PREFOS120" =
+  // "Adesivo Preto Fosco 2m x 120cm") — mesma convenção de largura em cm, só sem
+  // a letra. Sem o "?" aqui, ~130 SKUs reais (de 493) ficavam sem Width/Length.
+  const widthMatch = sku.slice(11).match(/^(\d{2,3})C?$/);
   if (!Number.isFinite(lengthM) || lengthM <= 0 || !widthMatch) return null;
   return { lengthM, widthM: Number.parseInt(widthMatch[1], 10) / 100 };
 }

@@ -19,6 +19,13 @@ export interface TinyProduto {
 
 export class TinyNaoConfiguradoError extends Error {}
 
+/** Tiny bloqueou por excesso de chamadas (código 6/7) e já esgotou a única
+ * retentativa interna — sinal pro chamador parar de insistir item por item
+ * (ver `POST /produtos/sincronizar-estoque`, que corta o lote na hora em vez
+ * de gastar o lote inteiro batendo num bloqueio que só passa depois de
+ * alguns minutos, segundo a própria mensagem do Tiny). */
+export class TinyBloqueadoError extends Error {}
+
 interface TinyRespostaProduto {
   produto?: { codigo?: string; nome?: string; id?: string; unidade?: string; situacao?: string };
   codigo?: string;
@@ -31,6 +38,9 @@ interface TinyRespostaProduto {
 interface TinyResposta {
   retorno: {
     status: string;
+    /** Código numérico do erro (ex. 6/7 = rate limit) — vem SOLTO aqui, não
+     * dentro de `erros[].erro` (que é só o texto da mensagem pro usuário). */
+    codigo_erro?: number | string;
     erros?: { erro: string }[];
     produtos?: TinyRespostaProduto[];
     numero_paginas?: number;
@@ -45,8 +55,13 @@ export interface ResultadoBuscaTiny {
 
 const CODIGO_ERRO_SEM_REGISTROS = "20";
 const CODIGOS_ERRO_RATE_LIMIT = new Set(["6", "7"]);
-const PAUSA_RATE_LIMIT_MS = 5000;
-export const PAUSA_ENTRE_PAGINAS_MS = 300;
+// Valores calibrados pelo `rtx-pedidos` (cliente Tiny v2 já validado em produção,
+// `src/sync/tiny-client.ts`): o bloqueio do Tiny dura ~1 min, então uma retentativa
+// de 5s (valor antigo daqui) não tinha chance real de passar — quase sempre virava
+// TinyBloqueadoError à toa. 1100ms entre chamadas é o intervalo que não bloqueia na
+// prática; 60s é o mínimo pra uma retentativa depois de bloqueado ter chance de vingar.
+const PAUSA_RATE_LIMIT_MS = 60_000;
+export const PAUSA_ENTRE_PAGINAS_MS = 1100;
 
 function aguardar(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,9 +92,9 @@ export async function buscarProdutosTiny(
   const body = (await res.json()) as TinyResposta;
 
   if (body.retorno.status === "Erro") {
-    const codigo = body.retorno.erros?.[0]?.erro;
+    const codigo = String(body.retorno.codigo_erro ?? "");
     if (codigo === CODIGO_ERRO_SEM_REGISTROS) return { produtos: [], pagina, totalPaginas: 0 };
-    if (codigo && CODIGOS_ERRO_RATE_LIMIT.has(codigo) && tentativa < 1) {
+    if (CODIGOS_ERRO_RATE_LIMIT.has(codigo) && tentativa < 1) {
       await aguardar(PAUSA_RATE_LIMIT_MS);
       return buscarProdutosTiny(busca, pagina, tentativa + 1);
     }
@@ -118,6 +133,9 @@ interface TinyDeposito {
 interface TinyRespostaEstoque {
   retorno: {
     status: string;
+    /** Código numérico do erro (ex. 6/7 = rate limit) — vem SOLTO aqui, não
+     * dentro de `erros[].erro` (que é só o texto da mensagem pro usuário). */
+    codigo_erro?: number | string;
     erros?: { erro: string }[];
     produto?: { depositos?: { deposito: TinyDeposito }[] };
   };
@@ -154,10 +172,13 @@ export async function buscarEstoqueTiny(tinyId: string, tentativa = 0): Promise<
   const body = (await res.json()) as TinyRespostaEstoque;
 
   if (body.retorno.status === "Erro") {
-    const codigo = body.retorno.erros?.[0]?.erro;
-    if (codigo && CODIGOS_ERRO_RATE_LIMIT.has(codigo) && tentativa < 1) {
-      await aguardar(PAUSA_RATE_LIMIT_MS);
-      return buscarEstoqueTiny(tinyId, tentativa + 1);
+    const codigo = String(body.retorno.codigo_erro ?? "");
+    if (CODIGOS_ERRO_RATE_LIMIT.has(codigo)) {
+      if (tentativa < 1) {
+        await aguardar(PAUSA_RATE_LIMIT_MS);
+        return buscarEstoqueTiny(tinyId, tentativa + 1);
+      }
+      throw new TinyBloqueadoError(`Tiny bloqueou por rate limit: ${JSON.stringify(body.retorno.erros ?? body.retorno)}`);
     }
     throw new Error(`Tiny retornou erro: ${JSON.stringify(body.retorno.erros ?? body.retorno)}`);
   }

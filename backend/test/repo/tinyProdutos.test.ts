@@ -3,6 +3,7 @@ import {
   buscarCatalogoCompletoTiny,
   buscarEstoqueTiny,
   buscarProdutosTiny,
+  TinyBloqueadoError,
   TinyNaoConfiguradoError,
 } from "../../src/repo/tinyProdutos.js";
 
@@ -67,28 +68,28 @@ describe("buscarProdutosTiny", () => {
   });
 
   it("devolve lista vazia quando o Tiny diz que não há registros (código 20)", async () => {
-    const respostaTiny = { retorno: { status: "Erro", erros: [{ erro: "20" }] } };
+    const respostaTiny = { retorno: { status: "Erro", codigo_erro: 20, erros: [{ erro: "Registro não encontrado" }] } };
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(respostaTiny), { status: 200 }));
     const resultado = await buscarProdutosTiny("inexistente");
     expect(resultado.produtos).toEqual([]);
   });
 
   it("lança erro para outros códigos de erro do Tiny", async () => {
-    const respostaTiny = { retorno: { status: "Erro", erros: [{ erro: "99" }] } };
+    const respostaTiny = { retorno: { status: "Erro", codigo_erro: 99, erros: [{ erro: "Erro desconhecido" }] } };
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(respostaTiny), { status: 200 }));
     await expect(buscarProdutosTiny("rolo")).rejects.toThrow();
   });
 
   it("tenta de novo uma vez após rate limit (código 6) e funciona na segunda tentativa", async () => {
     vi.useFakeTimers();
-    const respostaErro = { retorno: { status: "Erro", erros: [{ erro: "6" }] } };
+    const respostaErro = { retorno: { status: "Erro", codigo_erro: 6, erros: [{ erro: "API Bloqueada" }] } };
     const respostaOk = { retorno: { status: "OK", numero_paginas: 1, produtos: [] } };
     vi.mocked(fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify(respostaErro), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(respostaOk), { status: 200 }));
 
     const promise = buscarProdutosTiny("rolo");
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(60_000);
     const resultado = await promise;
 
     expect(resultado.produtos).toEqual([]);
@@ -97,11 +98,11 @@ describe("buscarProdutosTiny", () => {
 
   it("desiste depois da segunda tentativa de rate limit", async () => {
     vi.useFakeTimers();
-    const respostaErro = { retorno: { status: "Erro", erros: [{ erro: "6" }] } };
+    const respostaErro = { retorno: { status: "Erro", codigo_erro: 6, erros: [{ erro: "API Bloqueada" }] } };
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(respostaErro), { status: 200 }));
 
     const promise = buscarProdutosTiny("rolo").catch((e: unknown) => e);
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(60_000);
     const resultado = await promise;
 
     expect(resultado).toBeInstanceOf(Error);
@@ -134,7 +135,7 @@ describe("buscarCatalogoCompletoTiny", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify(pagina2), { status: 200 }));
 
     const promise = buscarCatalogoCompletoTiny();
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1100);
     const resultado = await promise;
 
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -175,20 +176,33 @@ describe("buscarEstoqueTiny", () => {
 
   it("tenta de novo uma vez após rate limit (código 6) e funciona na segunda tentativa", async () => {
     vi.useFakeTimers();
-    const respostaErro = { retorno: { status: "Erro", erros: [{ erro: "6" }] } };
+    const respostaErro = { retorno: { status: "Erro", codigo_erro: 6, erros: [{ erro: "API Bloqueada" }] } };
     const respostaOk = { retorno: { status: "OK", produto: { depositos: [] } } };
     vi.mocked(fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify(respostaErro), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(respostaOk), { status: 200 }));
 
     const promise = buscarEstoqueTiny("1");
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(60_000);
     await expect(promise).resolves.toBe(0);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("lança TinyBloqueadoError quando o rate limit persiste após a retentativa", async () => {
+    vi.useFakeTimers();
+    const respostaErro = { retorno: { status: "Erro", codigo_erro: 6, erros: [{ erro: "API Bloqueada" }] } };
+    // mockImplementation (não mockResolvedValue) pra cada chamada ganhar um Response novo —
+    // o corpo de um Response só pode ser lido (.json()) uma vez.
+    vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify(respostaErro), { status: 200 }));
+
+    const promise = buscarEstoqueTiny("1").catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(60_000);
+    const resultado = await promise;
+    expect(resultado).toBeInstanceOf(TinyBloqueadoError);
+  });
+
   it("lança erro para outros códigos de erro do Tiny", async () => {
-    const respostaErro = { retorno: { status: "Erro", erros: [{ erro: "99" }] } };
+    const respostaErro = { retorno: { status: "Erro", codigo_erro: 99, erros: [{ erro: "Erro desconhecido" }] } };
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(respostaErro), { status: 200 }));
     await expect(buscarEstoqueTiny("1")).rejects.toThrow();
   });

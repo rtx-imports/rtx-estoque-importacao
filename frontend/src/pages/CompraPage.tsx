@@ -1,35 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError } from "../api/client";
-import { useGerarPedido, useParametros, useProposta, useSetEstoque, useSetParametro } from "../api/compra";
+import { useParametros, useProposta, useSetParametro } from "../api/compra";
 import { useFornecedores } from "../api/fornecedores";
 import { useTiposProduto } from "../api/tiposProduto";
-import type { PropostaItem } from "../api/types";
+import { CurvaAbcTab } from "./decisaoCompra/CurvaAbcTab";
+import { CurvaXyzTab } from "./decisaoCompra/CurvaXyzTab";
+import { formatarData, formatarDataHora } from "./decisaoCompra/format";
+import { GradePrincipal } from "./decisaoCompra/GradePrincipal";
+import { KpiCards } from "./decisaoCompra/KpiCards";
+import { RevisaoDrawer } from "./decisaoCompra/RevisaoDrawer";
+import { SimulacoesTab } from "./decisaoCompra/SimulacoesTab";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
-
-function formatarData(iso: string): string {
-  const [, mes, dia] = iso.split("-");
-  return `${dia}/${mes}`;
-}
-
-function formatarDataHora(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-function mesLabel(k: number): string {
-  const d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() + k);
-  return `${MESES_ABREV[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
-}
 
 /** Sentinela pra fornecedores sem nenhum tipo_produto cadastrado — não é um tipo de verdade. */
 const TAB_OUTROS = "outros";
@@ -38,6 +21,13 @@ function capitalizar(texto: string): string {
   return texto.length ? texto[0].toUpperCase() + texto.slice(1) : texto;
 }
 
+/**
+ * Decisão de Compra — central de apoio à decisão pra compras, não uma tela
+ * operacional de estoque/logística/acompanhamento de pedido (essas ficam na
+ * página Pedidos). Responde: o que comprar, quanto, quanto vai custar, quando
+ * o estoque acaba e o impacto financeiro — termina na sugestão + planilha de
+ * compra; nunca controla recebimento/logística.
+ */
 export function CompraPage() {
   const navigate = useNavigate();
   const { data: fornecedores } = useFornecedores(true);
@@ -110,10 +100,7 @@ export function CompraPage() {
         )}
       </section>
 
-      {fornecedor && <ParametrosSection />}
-      {fornecedor && (
-        <PropostaSection fornecedorId={fornecedor.id} onPedidoGerado={(id) => navigate(`/pedidos/${id}`)} />
-      )}
+      {fornecedor && <DecisaoCompraFornecedor fornecedorId={fornecedor.id} fornecedorNome={fornecedor.nome} onPedidoGerado={(id) => navigate(`/pedidos/${id}`)} />}
     </div>
   );
 }
@@ -149,14 +136,27 @@ function ParametrosSection() {
       </button>
       {aberto && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {campos.map((campo) => (
+          {campos.map((campo) => {
+            const salvandoEste = setParametro.isPending && setParametro.variables?.chave === campo.chave;
+            const salvoEste =
+              setParametro.isSuccess && !setParametro.isPending && setParametro.variables?.chave === campo.chave;
+            return (
             <div key={campo.chave}>
-              <label className={labelClass}>{campo.label}</label>
+              <label className={labelClass}>
+                {campo.label} {salvandoEste && <span className="text-blue-500">salvando…</span>}
+                {salvoEste && <span className="text-emerald-600">✓ salvo</span>}
+              </label>
               <input
                 type="number"
                 step="any"
                 className={inputClass}
                 defaultValue={campo.valor}
+                onKeyDown={(e) => {
+                  // Enter salva na hora — sem isso, quem digita e aperta Enter (esperando
+                  // que já tenha valido) e não clica em outro campo nunca dispara o onBlur,
+                  // então o valor novo nunca chega a ser salvo nem a refletir na grade.
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
                 onBlur={(e) => {
                   const valor = e.target.value;
                   if (valor && Number(valor) !== campo.valor) {
@@ -183,69 +183,46 @@ function ParametrosSection() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-/** "Revisar" (vermelho) até 3 meses pra acabar, "Repor" (amber) até 5, senão "Ok". Mesmos limiares
- * usados na coloração da coluna "Acaba em" da referência (rtx-pedidos). Vira uma borda colorida na
- * célula "Item Code / Descrição" — mesmo padrão visual da referência (tick lateral), não uma coluna. */
-type StatusLinha = "ok" | "repor" | "revisar" | "semgiro";
-function statusLinha(item: PropostaItem): StatusLinha {
-  if (item.acabaTipo === "semgiro") return "semgiro";
-  if (item.acabaTipo === "acima12") return "ok";
-  const k = item.acabaMeses ?? 99;
-  if (k <= 3) return "revisar";
-  if (k <= 5) return "repor";
-  return "ok";
-}
-const STATUS_BORDA: Record<StatusLinha, string> = {
-  ok: "border-l-emerald-600",
-  repor: "border-l-amber-500",
-  revisar: "border-l-red-600",
-  semgiro: "border-l-slate-300",
-};
-const STATUS_LABEL: Record<StatusLinha, string> = { ok: "Ok", repor: "Repor", revisar: "Revisar", semgiro: "Sem giro" };
+type AbaInterna = "grade" | "abc" | "xyz" | "simulacoes";
+const ABAS_INTERNAS: { id: AbaInterna; label: string }[] = [
+  { id: "grade", label: "Decisão de Compra" },
+  { id: "abc", label: "Curva ABC" },
+  { id: "xyz", label: "Curva XYZ" },
+  { id: "simulacoes", label: "Simulações" },
+];
 
-const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-function formatarBRL(valor: number): string {
-  return brlFormatter.format(valor);
-}
-
-function formatarMetros(valor: number | null): string {
-  return valor == null ? "—" : `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}m`;
-}
-
-function acabaLabel(item: PropostaItem): string {
-  if (item.acabaTipo === "semgiro") return "Sem giro";
-  if (item.acabaTipo === "acima12") return ">12 meses";
-  return mesLabel(item.acabaMeses ?? 0);
-}
-
-function acabaClasse(item: PropostaItem): string {
-  if (item.acabaTipo !== "mes") return "text-slate-400";
-  const k = item.acabaMeses ?? 99;
-  if (k <= 3) return "font-bold text-red-600";
-  if (k <= 5) return "font-semibold text-amber-600";
-  return "text-slate-600";
-}
-
-const thClass =
-  "sticky top-0 z-10 whitespace-nowrap border-b border-r border-slate-200 bg-white px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400";
-const tdClass = "whitespace-nowrap border-b border-r border-slate-100 px-2 py-1 text-right";
-const tdValorClass = tdClass + " bg-teal-50/60 text-teal-700";
-
-function PropostaSection({ fornecedorId, onPedidoGerado }: { fornecedorId: string; onPedidoGerado: (id: string) => void }) {
+function DecisaoCompraFornecedor({
+  fornecedorId,
+  fornecedorNome,
+  onPedidoGerado,
+}: {
+  fornecedorId: string;
+  fornecedorNome: string;
+  onPedidoGerado: (id: string) => void;
+}) {
   const { data: proposta, isLoading } = useProposta(fornecedorId);
-  const setEstoque = useSetEstoque();
-  const gerarPedido = useGerarPedido();
-
+  const [abaInterna, setAbaInterna] = useState<AbaInterna>("grade");
   const [overrides, setOverrides] = useState<Record<string, string>>({});
-  const [busca, setBusca] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [drawerAberto, setDrawerAberto] = useState(false);
+
+  // Reseta seleção/ajustes ao trocar de fornecedor e pré-seleciona quem tem necessidade > 0
+  // (o comum é o comprador querer todos os itens sugeridos — ele desmarca o que não quer).
+  useEffect(() => {
+    setOverrides({});
+    if (proposta) {
+      setSelecionados(new Set(proposta.itens.filter((i) => i.necessidade > 0).map((i) => i.sku)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fornecedorId, proposta?.itens.length]);
 
   if (isLoading || !proposta) {
     return (
@@ -254,192 +231,72 @@ function PropostaSection({ fornecedorId, onPedidoGerado }: { fornecedorId: strin
       </section>
     );
   }
-  if (!proposta.itens.length) {
-    return (
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="text-sm text-slate-500">
-          Nenhum produto desse tipo cadastrado ainda — cadastre na aba Produtos.
-        </p>
-      </section>
-    );
-  }
-
-  function necessidadeEfetiva(item: PropostaItem): number {
-    const override = overrides[item.sku];
-    if (override !== undefined && override !== "") return Number(override);
-    return item.necessidade;
-  }
-
-  function handleGerarPedido() {
-    setErro(null);
-    const overridesNumericos: Record<string, number> = {};
-    for (const [sku, valor] of Object.entries(overrides)) {
-      if (valor !== "") overridesNumericos[sku] = Number(valor);
-    }
-    gerarPedido.mutate(
-      { fornecedorId, overrides: overridesNumericos },
-      {
-        onSuccess: (pedido) => onPedidoGerado(pedido.id),
-        onError: (error) =>
-          setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao gerar pedido"),
-      },
-    );
-  }
-
-  const buscaLower = busca.trim().toLowerCase();
-  const itensVisiveis = buscaLower
-    ? proposta.itens.filter(
-        (item) => item.sku.toLowerCase().includes(buscaLower) || item.descricao.toLowerCase().includes(buscaLower),
-      )
-    : proposta.itens;
-
-  const totalNecessidade = itensVisiveis.reduce((soma, item) => soma + necessidadeEfetiva(item), 0);
-  const cambio = proposta.params.cambio;
-  const meses = proposta.itens[0]?.plan.map((_, m) => m) ?? [0, 1, 2, 3, 4, 5, 6];
-  const totalColunas = 13 + meses.length;
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-800">Proposta de compra</h2>
-          <p className="text-xs text-slate-500">
-            Cada coluna mensal é quanto pedir naquele mês, considerando lead time e crescimento esperado — só o
-            mês atual (destacado) vira pedido agora.
-          </p>
+    <div className="space-y-4">
+      <KpiCards kpis={proposta.kpis} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1">
+          {ABAS_INTERNAS.map((aba) => (
+            <button
+              key={aba.id}
+              onClick={() => setAbaInterna(aba.id)}
+              className={
+                "rounded-md px-3 py-1.5 text-sm font-medium " +
+                (abaInterna === aba.id ? "bg-blue-600 text-white" : "bg-white text-slate-600 hover:bg-slate-100")
+              }
+            >
+              {aba.label}
+            </button>
+          ))}
         </div>
-        <div className="w-64">
-          <input
-            className="font-planilha w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="⌕ Buscar SKU ou descrição..."
+        {abaInterna === "grade" && (
+          <button
+            onClick={() => setDrawerAberto(true)}
+            disabled={!selecionados.size}
+            className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Revisar e Exportar ({selecionados.size})
+          </button>
+        )}
+      </div>
+
+      {abaInterna === "grade" && <ParametrosSection />}
+
+      {abaInterna === "grade" &&
+        (proposta.itens.length === 0 ? (
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-sm text-slate-500">
+              Nenhum produto desse tipo precisa de atenção agora — estoque + trânsito cobrem a demanda projetada.
+            </p>
+          </section>
+        ) : (
+          <GradePrincipal
+            itens={proposta.itens}
+            overrides={overrides}
+            setOverrides={setOverrides}
+            selecionados={selecionados}
+            setSelecionados={setSelecionados}
+            cambio={proposta.params.cambio}
           />
-        </div>
-      </div>
+        ))}
 
-      <div className="max-h-[70vh] overflow-auto rounded-md border border-slate-200">
-        <table className="font-planilha w-max min-w-full border-collapse text-[12.5px] tabular-nums">
-          <thead>
-            <tr>
-              <th className={thClass + " text-left"}>Item Code / Descrição</th>
-              <th className={thClass}>Width</th>
-              <th className={thClass}>Length</th>
-              <th className={thClass} title="Unidades por caixa">
-                Quantity
-              </th>
-              <th className={thClass + " bg-teal-50/60"} title="Aproximado: demanda de pico mensal × custo × câmbio">
-                CMV 30d
-              </th>
-              <th className={thClass}>SKU importado</th>
-              <th className={thClass}>Estoque Atual</th>
-              <th className={thClass + " bg-teal-50/60"}>Valor Atual</th>
-              <th className={thClass} title="Estoque em centros de fulfillment (ML/Shopee) — não integrado ainda">
-                Estoque Full
-              </th>
-              <th className={thClass + " bg-teal-50/60"}>Valor Full</th>
-              <th className={thClass}>Em trânsito</th>
-              <th className={thClass + " bg-teal-50/60"}>Valor Trânsito</th>
-              <th className={thClass}>Acaba Em</th>
-              {meses.map((m) => (
-                <th key={m} className={thClass + (m === 0 ? " bg-teal-50" : "")}>
-                  {mesLabel(m)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {itensVisiveis.map((item) => {
-              const valorAtual = item.estoque * item.custoAtualUsd * cambio;
-              const valorTransito = item.transito * item.custoTransitoUsd * cambio;
-              const cmv30d = item.demandaPicoMensal * item.custoUnitUsd * cambio;
-              return (
-                <tr key={item.sku} className="hover:bg-slate-50">
-                  <td
-                    className={`whitespace-normal border-b border-r border-slate-100 border-l-[3px] bg-white px-2.5 py-1 text-left align-middle ${STATUS_BORDA[statusLinha(item)]}`}
-                    title={`Status: ${STATUS_LABEL[statusLinha(item)]}`}
-                  >
-                    <div className="font-medium text-slate-800">{item.sku}</div>
-                    <div className="text-[11px] text-slate-500">{item.descricao}</div>
-                  </td>
-                  <td className={tdClass}>{formatarMetros(item.widthM)}</td>
-                  <td className={tdClass}>{formatarMetros(item.lengthM)}</td>
-                  <td className={tdClass}>{item.unidadesPorCaixa}</td>
-                  <td className={tdValorClass}>{formatarBRL(cmv30d)}</td>
-                  <td className={tdClass + " text-slate-500"}>{item.sku}</td>
-                  <td className={tdClass}>
-                    <input
-                      type="number"
-                      min={0}
-                      className="font-planilha w-16 rounded border border-transparent bg-transparent px-1 py-0.5 text-right tabular-nums outline-none hover:border-slate-300 focus:border-blue-500 focus:bg-white"
-                      defaultValue={item.estoque}
-                      onBlur={(e) => {
-                        const valor = Number(e.target.value);
-                        if (Number.isFinite(valor) && valor !== item.estoque) {
-                          setEstoque.mutate({ sku: item.sku, quantidade: valor });
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className={tdValorClass}>{formatarBRL(valorAtual)}</td>
-                  <td className={tdClass + " text-slate-400"} title="Não integrado ainda">
-                    —
-                  </td>
-                  <td className={tdValorClass + " text-slate-400"}>—</td>
-                  <td
-                    className={tdClass}
-                    title="Calculado a partir dos pedidos embarcados/aguardando desembaraço/em desova/conferência — não editável"
-                  >
-                    {item.transito}
-                  </td>
-                  <td className={tdValorClass}>{formatarBRL(valorTransito)}</td>
-                  <td className={tdClass + " " + acabaClasse(item)}>{acabaLabel(item)}</td>
-                  {item.plan.map((qtd, m) =>
-                    m === 0 ? (
-                      <td key={m} className={tdClass + " bg-teal-50"}>
-                        <input
-                          type="number"
-                          min={0}
-                          className="font-planilha w-16 rounded border border-slate-300 px-1 py-0.5 text-right font-semibold tabular-nums outline-none focus:border-blue-500"
-                          placeholder={String(item.necessidade)}
-                          value={overrides[item.sku] ?? ""}
-                          onChange={(e) => setOverrides({ ...overrides, [item.sku]: e.target.value })}
-                        />
-                      </td>
-                    ) : (
-                      <td key={m} className={tdClass + " text-slate-500"} title={`pedir em ${mesLabel(m)}`}>
-                        {qtd > 0 ? new Intl.NumberFormat("pt-BR").format(qtd) : "·"}
-                      </td>
-                    ),
-                  )}
-                </tr>
-              );
-            })}
-            {!itensVisiveis.length && (
-              <tr>
-                <td colSpan={totalColunas} className="px-3 py-4 text-center text-sm text-slate-400">
-                  Nenhum produto encontrado para "{busca}".
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {abaInterna === "abc" && <CurvaAbcTab itens={proposta.itensTodos} />}
+      {abaInterna === "xyz" && <CurvaXyzTab itens={proposta.itensTodos} />}
+      {abaInterna === "simulacoes" && <SimulacoesTab fornecedorId={fornecedorId} paramsAtual={proposta.params} />}
 
-      {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
-
-      <div className="mt-4 flex items-center justify-between">
-        <p className="font-planilha text-xs text-slate-500">
-          Total a pedir agora ({mesLabel(0)}): <span className="font-semibold text-slate-800">{totalNecessidade}</span>
-        </p>
-        <button
-          onClick={handleGerarPedido}
-          disabled={gerarPedido.isPending || totalNecessidade <= 0}
-          className="rounded-md bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-        >
-          {gerarPedido.isPending ? "Gerando..." : "Gerar pedido"}
-        </button>
-      </div>
-    </section>
+      <RevisaoDrawer
+        aberto={drawerAberto}
+        onClose={() => setDrawerAberto(false)}
+        fornecedorId={fornecedorId}
+        fornecedorNome={fornecedorNome}
+        itensGrade={proposta.itens}
+        selecionados={selecionados}
+        overrides={overrides}
+        cambio={proposta.params.cambio}
+        onPedidoGerado={onPedidoGerado}
+      />
+    </div>
   );
 }

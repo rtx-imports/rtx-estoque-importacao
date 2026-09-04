@@ -150,7 +150,7 @@ describe("GET /proposta", () => {
       url: `/pedidos/${embarcado.id}/itens`,
       payload: { item_code: "SKU-TRANSITO", descricao: "x", quantidade: 50, unidade: "un", preco_unitario: 1 },
     });
-    await app.inject({ method: "PUT", url: `/pedidos/${embarcado.id}`, payload: { status: "embarcado" } });
+    await app.inject({ method: "PUT", url: `/pedidos/${embarcado.id}`, payload: { status: "embarcado_em_transito" } });
 
     // pedido ainda em rascunho não deve contar como em trânsito.
     const rascunho = (

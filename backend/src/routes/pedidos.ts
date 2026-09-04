@@ -3,8 +3,25 @@ import type postgres from "postgres";
 import { sql } from "../db.js";
 import { pedidoInputSchema, pedidoUpdateSchema } from "../schemas/pedido.js";
 import { pedidoItemInputSchema, pedidoItemUpdateSchema } from "../schemas/pedidoItem.js";
+import checklistTemplate from "../data/checklistTemplate.json" with { type: "json" };
 
 const asJson = (value: Record<string, unknown>) => value as postgres.JSONValue;
+
+/**
+ * Todo pedido novo já nasce com a matriz de checklist inteira da RTX (113
+ * itens, 29 grupos — PDF "MATRIZ_CHECK LIST ATUALIZADO"), pra não precisar
+ * recriar isso à mão pedido por pedido (decisão 17 do DECISIONS.md:
+ * minimizar digitação manual). Cada item nasce desmarcado.
+ */
+async function semearChecklist(pedidoId: string): Promise<void> {
+  for (let i = 0; i < checklistTemplate.length; i++) {
+    const item = checklistTemplate[i];
+    await sql`
+      INSERT INTO pedido_checklist_itens (pedido_id, descricao, grupo, ordem)
+      VALUES (${pedidoId}, ${item.descricao}, ${item.grupo}, ${i})
+    `;
+  }
+}
 
 export async function pedidosRoutes(app: FastifyInstance) {
   app.get("/pedidos", async (request) => {
@@ -29,7 +46,8 @@ export async function pedidosRoutes(app: FastifyInstance) {
     }
     const itens = await sql`SELECT * FROM pedido_itens WHERE pedido_id = ${id} ORDER BY criado_em`;
     const documentos = await sql`SELECT * FROM pedido_documentos WHERE pedido_id = ${id} ORDER BY enviado_em`;
-    return { ...pedido, itens, documentos };
+    const checklist = await sql`SELECT * FROM pedido_checklist_itens WHERE pedido_id = ${id} ORDER BY ordem, criado_em`;
+    return { ...pedido, itens, documentos, checklist };
   });
 
   app.post("/pedidos", async (request, reply) => {
@@ -52,7 +70,9 @@ export async function pedidosRoutes(app: FastifyInstance) {
       )
       RETURNING *
     `;
-    return reply.code(201).send({ ...pedido, itens: [], documentos: [] });
+    await semearChecklist(pedido.id as string);
+    const checklist = await sql`SELECT * FROM pedido_checklist_itens WHERE pedido_id = ${pedido.id} ORDER BY ordem`;
+    return reply.code(201).send({ ...pedido, itens: [], documentos: [], checklist });
   });
 
   app.put("/pedidos/:id", async (request, reply) => {

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { ParametrosComMetadados, Pedido, Produto, Proposta } from "./types";
+import type { ParametrosComMetadados, Pedido, Produto, Proposta, SimulacaoParametros } from "./types";
 
 export function useTodosProdutos(tipo?: string) {
   return useQuery({
@@ -15,6 +15,8 @@ export interface ProdutoFormValues {
   unidades_por_caixa?: number;
   custo_unit_usd?: number;
   tipo?: string;
+  item_code?: string;
+  ncm?: string;
 }
 
 export function useCreateProduto() {
@@ -31,6 +33,8 @@ export interface ProdutoEditValues {
   custo_unit_usd?: number;
   ativo?: boolean;
   tipo?: string | null;
+  item_code?: string | null;
+  ncm?: string | null;
 }
 
 export function useEditarProduto() {
@@ -90,5 +94,43 @@ export function useGerarPedido() {
     mutationFn: ({ fornecedorId, overrides }: { fornecedorId: string; overrides: Record<string, number> }) =>
       api.post<Pedido>("/proposta/gerar-pedido", { fornecedor_id: fornecedorId, overrides }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos"] }),
+  });
+}
+
+/** Aba Simulações — recalcula sem gravar nada, com parâmetros hipotéticos. */
+export function useSimulacao() {
+  return useMutation({
+    mutationFn: ({
+      fornecedorId,
+      overrides,
+      parametros,
+    }: {
+      fornecedorId: string;
+      overrides: Record<string, number>;
+      parametros: SimulacaoParametros;
+    }) => api.post<Proposta>("/proposta/simular", { fornecedor_id: fornecedorId, overrides, parametros }),
+  });
+}
+
+/** Botão principal da página: gera a planilha no padrão RTX e dispara o download no navegador. */
+export function useExportarPedido() {
+  return useMutation({
+    mutationFn: async ({
+      fornecedorId,
+      itens,
+    }: {
+      fornecedorId: string;
+      itens: { sku: string; quantidade: number }[];
+    }) => {
+      const { blob, filename } = await api.postBlob("/proposta/exportar", { fornecedor_id: fornecedorId, itens });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename ?? "pedido.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
   });
 }

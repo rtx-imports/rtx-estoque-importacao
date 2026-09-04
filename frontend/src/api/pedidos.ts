@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { Pedido, PedidoComDetalhes, PedidoItem, PedidoStatus } from "./types";
+import type { Pedido, PedidoChecklistItem, PedidoComDetalhes, PedidoItem, PedidoStatus } from "./types";
 
 export function usePedidos(fornecedorId?: string) {
   return useQuery({
@@ -65,6 +65,43 @@ export function useDeleteItem(pedidoId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (itemId: string) => api.delete(`/pedidos/${pedidoId}/itens/${itemId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos", pedidoId] }),
+  });
+}
+
+/** Gera a matriz de checklist padrão da RTX (113 itens) num pedido que ainda
+ * não tem nenhum item — pedidos criados antes da matriz existir não nasceram
+ * com ela. */
+export function useGerarMatrizChecklist(pedidoId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<PedidoChecklistItem[]>(`/pedidos/${pedidoId}/checklist/gerar-matriz`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos", pedidoId] }),
+  });
+}
+
+export function useAddChecklistItem(pedidoId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (descricao: string) =>
+      api.post<PedidoChecklistItem>(`/pedidos/${pedidoId}/checklist`, { descricao }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos", pedidoId] }),
+  });
+}
+
+export function useToggleChecklistItem(pedidoId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, concluido }: { itemId: string; concluido: boolean }) =>
+      api.put<PedidoChecklistItem>(`/pedidos/${pedidoId}/checklist/${itemId}`, { concluido }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos", pedidoId] }),
+  });
+}
+
+export function useDeleteChecklistItem(pedidoId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) => api.delete(`/pedidos/${pedidoId}/checklist/${itemId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pedidos", pedidoId] }),
   });
 }

@@ -3,13 +3,17 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useFornecedor } from "../api/fornecedores";
 import {
+  useAddChecklistItem,
   useAddItem,
+  useDeleteChecklistItem,
   useDeleteItem,
+  useGerarMatrizChecklist,
   usePedido,
+  useToggleChecklistItem,
   useUpdatePedidoStatus,
   useUploadDocumento,
 } from "../api/pedidos";
-import { FASES_DOCUMENTO, PEDIDO_STATUS, TIPOS_DOCUMENTO } from "../api/types";
+import { FASES_DOCUMENTO, PEDIDO_STATUS, PEDIDO_STATUS_LABEL, TIPOS_DOCUMENTO } from "../api/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
@@ -48,7 +52,7 @@ export function PedidoDetalhePage() {
             >
               {PEDIDO_STATUS.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {PEDIDO_STATUS_LABEL[status]}
                 </option>
               ))}
             </select>
@@ -56,9 +60,153 @@ export function PedidoDetalhePage() {
         </div>
       </section>
 
+      <ChecklistSection pedidoId={pedido.id} checklist={pedido.checklist} />
       <ItensSection pedidoId={pedido.id} itens={pedido.itens} />
       <DocumentosSection pedidoId={pedido.id} documentos={pedido.documentos} />
     </div>
+  );
+}
+
+/**
+ * Checklist por pedido — matriz padrão da RTX (113 itens, 29 grupos, PDF
+ * "MATRIZ_CHECK LIST ATUALIZADO") já nasce preenchida em pedidos novos
+ * (`semearChecklist` no backend). Agrupado por seção, com progresso geral e
+ * por seção; dá pra adicionar itens extras avulsos (sem grupo) também.
+ */
+function ChecklistSection({
+  pedidoId,
+  checklist,
+}: {
+  pedidoId: string;
+  checklist: import("../api/types").PedidoChecklistItem[];
+}) {
+  const addItem = useAddChecklistItem(pedidoId);
+  const toggleItem = useToggleChecklistItem(pedidoId);
+  const deleteItem = useDeleteChecklistItem(pedidoId);
+  const gerarMatriz = useGerarMatrizChecklist(pedidoId);
+  const [descricao, setDescricao] = useState("");
+  const [gruposAbertos, setGruposAbertos] = useState<Set<string>>(new Set());
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!descricao.trim()) return;
+    addItem.mutate(descricao.trim(), { onSuccess: () => setDescricao("") });
+  }
+
+  const concluidos = checklist.filter((item) => item.concluido).length;
+
+  // Agrupa preservando a ordem de aparição (mesma ordem da matriz — 1.1, 1.2, ...);
+  // itens sem grupo (avulsos, adicionados à mão) ficam num grupo "Outros" ao final.
+  const grupos: { nome: string; itens: import("../api/types").PedidoChecklistItem[] }[] = [];
+  const indicePorGrupo = new Map<string, number>();
+  for (const item of checklist) {
+    const nome = item.grupo ?? "Outros";
+    if (!indicePorGrupo.has(nome)) {
+      indicePorGrupo.set(nome, grupos.length);
+      grupos.push({ nome, itens: [] });
+    }
+    grupos[indicePorGrupo.get(nome)!].itens.push(item);
+  }
+
+  function toggleGrupo(nome: string) {
+    const proximo = new Set(gruposAbertos);
+    if (proximo.has(nome)) proximo.delete(nome);
+    else proximo.add(nome);
+    setGruposAbertos(proximo);
+  }
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-800">Checklist</h2>
+        {checklist.length > 0 && (
+          <span className="text-xs text-slate-500">
+            {concluidos} de {checklist.length} concluído{concluidos === 1 ? "" : "s"} (
+            {Math.round((concluidos / checklist.length) * 100)}%)
+          </span>
+        )}
+      </div>
+
+      {checklist.length === 0 && (
+        <div className="mb-3 rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
+          <p className="mb-2 text-sm text-slate-500">
+            Este pedido não tem checklist ainda (foi criado antes da matriz existir).
+          </p>
+          <button
+            onClick={() => gerarMatriz.mutate()}
+            disabled={gerarMatriz.isPending}
+            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {gerarMatriz.isPending ? "Gerando..." : "Gerar matriz padrão RTX (113 itens)"}
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="mb-3 flex gap-2">
+        <input
+          className={inputClass}
+          placeholder="Item avulso (fora da matriz padrão)"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+        />
+        <button
+          type="submit"
+          disabled={addItem.isPending || !descricao.trim()}
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          Adicionar
+        </button>
+      </form>
+
+      {!!grupos.length && (
+        <div className="max-h-[32rem] space-y-2 overflow-y-auto">
+          {grupos.map((grupo) => {
+            const feitos = grupo.itens.filter((i) => i.concluido).length;
+            const completo = feitos === grupo.itens.length;
+            const aberto = gruposAbertos.has(grupo.nome);
+            return (
+              <div key={grupo.nome} className="rounded-md border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => toggleGrupo(grupo.nome)}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-slate-50"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <span>{aberto ? "▾" : "▸"}</span>
+                    {grupo.nome}
+                    {completo && <span className="text-emerald-600">✓</span>}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {feitos}/{grupo.itens.length}
+                  </span>
+                </button>
+                {aberto && (
+                  <ul className="divide-y divide-slate-100 border-t border-slate-100 px-3">
+                    {grupo.itens.map((item) => (
+                      <li key={item.id} className="flex items-center gap-2 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={item.concluido}
+                          onChange={(e) => toggleItem.mutate({ itemId: item.id, concluido: e.target.checked })}
+                        />
+                        <span
+                          className={`flex-1 text-sm ${item.concluido ? "text-slate-400 line-through" : "text-slate-700"}`}
+                        >
+                          {item.descricao}
+                        </span>
+                        <button onClick={() => deleteItem.mutate(item.id)} className="text-xs text-red-600 hover:underline">
+                          Remover
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

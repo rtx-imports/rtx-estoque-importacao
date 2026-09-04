@@ -114,8 +114,6 @@ describe("POST /produtos/importar-tiny-catalogo", () => {
       ],
     });
 
-    vi.mocked(buscarEstoqueTiny).mockResolvedValue(42);
-
     const response = await app.inject({ method: "POST", url: "/produtos/importar-tiny-catalogo" });
     expect(response.statusCode).toBe(201);
     expect(response.json()).toEqual({
@@ -124,17 +122,9 @@ describe("POST /produtos/importar-tiny-catalogo", () => {
       naoClassificados: 1,
       importados: 2,
       jaExistiam: 0,
-      estoqueAtualizado: 2,
+      tinyIdPreenchido: 0,
       custoPreenchido: 0,
     });
-
-    const estoque = await app.inject({ method: "GET", url: "/estoque" });
-    expect(estoque.json()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sku: "10401BRAFOS100", quantidade: 42 }),
-        expect.objectContaining({ sku: "30605PLMDBR60C", quantidade: 42 }),
-      ]),
-    );
 
     const produtos = await app.inject({ method: "GET", url: "/produtos" });
     const body = produtos.json();
@@ -159,7 +149,7 @@ describe("POST /produtos/importar-tiny-catalogo", () => {
       naoClassificados: 0,
       importados: 0,
       jaExistiam: 1,
-      estoqueAtualizado: 1,
+      tinyIdPreenchido: 1,
       custoPreenchido: 0,
     });
   });

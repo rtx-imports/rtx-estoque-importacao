@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useFornecedores } from "../api/fornecedores";
 import { ApiError } from "../api/client";
 import { useCreatePedido, usePedidos } from "../api/pedidos";
+import { PEDIDO_STATUS_LABEL } from "../api/types";
+import { KanbanPedidos } from "./pedidos/KanbanPedidos";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
@@ -16,6 +18,7 @@ export function PedidosPage() {
   const [fornecedorId, setFornecedorId] = useState("");
   const [numeroReferencia, setNumeroReferencia] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [visualizacao, setVisualizacao] = useState<"lista" | "kanban">("kanban");
 
   const fornecedorPorId = new Map((fornecedores ?? []).map((f) => [f.id, f.nome]));
 
@@ -87,10 +90,35 @@ export function PedidosPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">Pedidos</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-800">Pedidos</h2>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setVisualizacao("kanban")}
+              className={
+                "rounded-md px-3 py-1 text-xs font-medium " +
+                (visualizacao === "kanban" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+              }
+            >
+              Kanban
+            </button>
+            <button
+              onClick={() => setVisualizacao("lista")}
+              className={
+                "rounded-md px-3 py-1 text-xs font-medium " +
+                (visualizacao === "lista" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+              }
+            >
+              Lista
+            </button>
+          </div>
+        </div>
         {isLoading && <p className="text-sm text-slate-500">Carregando...</p>}
         {!isLoading && pedidos?.length === 0 && <p className="text-sm text-slate-500">Nenhum pedido criado ainda.</p>}
-        {!!pedidos?.length && (
+        {!!pedidos?.length && visualizacao === "kanban" && (
+          <KanbanPedidos pedidos={pedidos} fornecedorPorId={fornecedorPorId} />
+        )}
+        {!!pedidos?.length && visualizacao === "lista" && (
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
@@ -112,7 +140,7 @@ export function PedidosPage() {
                   <td className="py-2">{fornecedorPorId.get(pedido.fornecedor_id) ?? pedido.fornecedor_id}</td>
                   <td className="py-2">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
-                      {pedido.status}
+                      {PEDIDO_STATUS_LABEL[pedido.status]}
                     </span>
                   </td>
                   <td className="py-2">{pedido.moeda}</td>

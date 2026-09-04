@@ -1,4 +1,4 @@
-import postgres from "postgres";
+import { getPainelSql } from "./painelConexao.js";
 
 /**
  * Leitura de vendas mensais do painel-gbw — só leitura, nunca escreve lá.
@@ -7,17 +7,6 @@ import postgres from "postgres";
  * mudar só este arquivo. Tolerante: sem PAINEL_DATABASE_URL configurada,
  * devolve série vazia em vez de quebrar (útil pra dev sem credencial).
  */
-
-let painelSql: ReturnType<typeof postgres> | undefined;
-
-function getPainelSql() {
-  const connectionString = process.env.PAINEL_DATABASE_URL;
-  if (!connectionString) return undefined;
-  if (!painelSql) {
-    painelSql = postgres(connectionString, { onnotice: () => {} });
-  }
-  return painelSql;
-}
 
 export interface VendaMes {
   mes: string; // "YYYY-MM"

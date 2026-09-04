@@ -1,0 +1,143 @@
+[
+  { "grupo": "1.1 Solicitação de Cotação", "descricao": "Enviar RFQ (Request for Quotation) para fornecedor com detalhes do produto" },
+  { "grupo": "1.1 Solicitação de Cotação", "descricao": "Receber cotação com valores unitários, MOQ, prazos e Incoterm" },
+  { "grupo": "1.1 Solicitação de Cotação", "descricao": "Negociar condições (preço, forma de pagamento, prazo de produção)" },
+
+  { "grupo": "1.2 Definição de Pedido", "descricao": "Escolher fornecedor (comparando preço, prazo, histórico, qualidade)" },
+  { "grupo": "1.2 Definição de Pedido", "descricao": "Confirmar Incoterm (FOB, CIF, EXW etc.)" },
+  { "grupo": "1.2 Definição de Pedido", "descricao": "Validar condições do frete (com seu agente ou o do fornecedor)" },
+  { "grupo": "1.2 Definição de Pedido", "descricao": "Confirmar mix de produtos e quantidades" },
+
+  { "grupo": "1.3 Documentação Inicial", "descricao": "Receber e analisar a Proforma Invoice (PI): itens corretos, preço final, peso/volume estimado, dados bancários corretos" },
+  { "grupo": "1.3 Documentação Inicial", "descricao": "Aprovar formalmente a PI (por e-mail ou sistema)" },
+
+  { "grupo": "1.4 Planejamento Logístico", "descricao": "Informar o agente de cargas sobre o pedido" },
+  { "grupo": "1.4 Planejamento Logístico", "descricao": "Estimar data de prontidão (Ready Date)" },
+  { "grupo": "1.4 Planejamento Logístico", "descricao": "Reservar janela de embarque (booking preliminar)" },
+  { "grupo": "1.4 Planejamento Logístico", "descricao": "Alinhar com o despachante sobre os documentos que serão exigidos no desembaraço" },
+
+  { "grupo": "1.5 Pagamento Inicial", "descricao": "Emitir ordem de pagamento (15% / 20% de entrada)" },
+  { "grupo": "1.5 Pagamento Inicial", "descricao": "Confirmar dados bancários com o fornecedor" },
+  { "grupo": "1.5 Pagamento Inicial", "descricao": "Efetuar transferência internacional" },
+  { "grupo": "1.5 Pagamento Inicial", "descricao": "Enviar o SWIFT do pagamento ao fornecedor" },
+
+  { "grupo": "2.1 Início da Produção", "descricao": "Fornecedor confirma início da produção" },
+  { "grupo": "2.1 Início da Produção", "descricao": "Registrar data de início e prazo estimado para finalização" },
+  { "grupo": "2.1 Início da Produção", "descricao": "Validar amostra (se aplicável)" },
+  { "grupo": "2.1 Início da Produção", "descricao": "Solicitar atualizações semanais com fotos/vídeos do andamento" },
+
+  { "grupo": "2.2 Preparação dos Documentos", "descricao": "Solicitar fatura comercial (Invoice) atualizada com valores finais" },
+  { "grupo": "2.2 Preparação dos Documentos", "descricao": "Solicitar packing list com pesos, volumes e cubagem" },
+  { "grupo": "2.2 Preparação dos Documentos", "descricao": "Confirmar dados para conhecimento de embarque (BL)" },
+  { "grupo": "2.2 Preparação dos Documentos", "descricao": "Verificar se há produtos com exigência de certificado (Inmetro, Anvisa, etc.)" },
+
+  { "grupo": "2.3 Inspeção e Controle de Qualidade", "descricao": "Agendar inspeção de qualidade (se houver)" },
+  { "grupo": "2.3 Inspeção e Controle de Qualidade", "descricao": "Validar se está tudo conforme padrão acordado" },
+  { "grupo": "2.3 Inspeção e Controle de Qualidade", "descricao": "Receber relatório de QC com fotos e aprovação final" },
+  { "grupo": "2.3 Inspeção e Controle de Qualidade", "descricao": "Liberar embarque apenas após aprovação da inspeção" },
+
+  { "grupo": "2.4 Agendamento de Embarque", "descricao": "Confirmar \"Ready Date\" com o fornecedor" },
+  { "grupo": "2.4 Agendamento de Embarque", "descricao": "Solicitar booking com o agente de cargas" },
+  { "grupo": "2.4 Agendamento de Embarque", "descricao": "Confirmar data de retirada no armazém/fábrica" },
+  { "grupo": "2.4 Agendamento de Embarque", "descricao": "Confirmar porto de origem e destino" },
+
+  { "grupo": "2.5 Pagamento Final (se aplicável)", "descricao": "Validar valor final e condições de pagamento" },
+  { "grupo": "2.5 Pagamento Final (se aplicável)", "descricao": "Efetuar pagamento do saldo validando o total da Invoice final (70% / 85%)" },
+  { "grupo": "2.5 Pagamento Final (se aplicável)", "descricao": "Solicitar comprovante (SWIFT ou confirmação do fornecedor)" },
+
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Todos os documentos foram recebidos e conferidos" },
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Frete internacional negociado e reservado" },
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Container carregado ou pronto para carregamento" },
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Informar agente e despachante sobre datas e documentos" },
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Registrar valor e taxas locais no destino" },
+  { "grupo": "2.6 Checklist Final Pré-Embarque", "descricao": "Atualizar status do container no App / sistema interno" },
+
+  { "grupo": "3.1 Carregamento do Container", "descricao": "Container retirado pelo agente no local do fornecedor" },
+  { "grupo": "3.1 Carregamento do Container", "descricao": "Carga conferida no carregamento" },
+  { "grupo": "3.1 Carregamento do Container", "descricao": "Container lacrado (registrar número do lacre)" },
+  { "grupo": "3.1 Carregamento do Container", "descricao": "Fotos do carregamento e da carga interna recebidas" },
+  { "grupo": "3.1 Carregamento do Container", "descricao": "Peso e volume final confirmados" },
+
+  { "grupo": "3.2 Emissão de Documentos Finais", "descricao": "Invoice e Packing List finais conferidos" },
+  { "grupo": "3.2 Emissão de Documentos Finais", "descricao": "Emissão do Bill of Lading (BL) com todos os dados corretos: shipper, consignee, notify, porto de origem e destino, tipo de frete (prepaid/collect), container number, seal number, descrição da carga" },
+  { "grupo": "3.2 Emissão de Documentos Finais", "descricao": "Verificar tipo de BL" },
+
+  { "grupo": "3.3 Confirmação do Embarque", "descricao": "Container entregue no porto" },
+  { "grupo": "3.3 Confirmação do Embarque", "descricao": "Navio saiu da China (ETD – Estimated Time of Departure)" },
+  { "grupo": "3.3 Confirmação do Embarque", "descricao": "Informar ETA no Brasil (portos como Santos, Itajaí, Rio, etc.)" },
+  { "grupo": "3.3 Confirmação do Embarque", "descricao": "Adicionar link de rastreio (MarineTraffic, SeaRates Tracking)" },
+  { "grupo": "3.3 Confirmação do Embarque", "descricao": "Atualizar Status" },
+
+  { "grupo": "4.1 Monitoramento do Navio", "descricao": "Verificar se o navio realmente saiu na data prevista (ETD)" },
+  { "grupo": "4.1 Monitoramento do Navio", "descricao": "Registrar ETA atualizado no Brasil (Estimated Time of Arrival)" },
+  { "grupo": "4.1 Monitoramento do Navio", "descricao": "Verificar se há transbordo (navio troca em outro porto)" },
+  { "grupo": "4.1 Monitoramento do Navio", "descricao": "Acompanhar status do navio via link" },
+
+  { "grupo": "4.2 Documentos para o Despachante", "descricao": "Enviar todos os documentos para o despachante no Brasil: BL (original ou telex release), Invoice, Packing List, certificados exigidos (ex: Inmetro, Anvisa, Fitosanitário), PI e demais anexos" },
+  { "grupo": "4.2 Documentos para o Despachante", "descricao": "Confirmar recebimento e análise do despachante" },
+  { "grupo": "4.2 Documentos para o Despachante", "descricao": "Solicitar prévia do cálculo de impostos" },
+
+  { "grupo": "4.3 Organização Financeira", "descricao": "Registrar e provisionar valores de impostos (II, IPI, PIS, COFINS, ICMS)" },
+  { "grupo": "4.3 Organização Financeira", "descricao": "Provisionar taxas portuárias e do agente de cargas" },
+  { "grupo": "4.3 Organização Financeira", "descricao": "Planejar desembolso no sistema financeiro (pagamentos por vencimento)" },
+  { "grupo": "4.3 Organização Financeira", "descricao": "Validar se frete internacional já foi pago (se não, agendar)" },
+
+  { "grupo": "4.4 Chegada do Container no Porto", "descricao": "Confirmar chegada física do navio no porto brasileiro (consultar armador ou MarineTraffic)" },
+  { "grupo": "4.4 Chegada do Container no Porto", "descricao": "Registrar a data de atracação e previsão de descarga" },
+  { "grupo": "4.4 Chegada do Container no Porto", "descricao": "Validar se o container foi descarregado corretamente" },
+
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "BL (original ou telex release)" },
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "Invoice final" },
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "Packing List final" },
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "Termo de responsabilidade (se necessário)" },
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "Certificados específicos (ex: Inmetro, Anvisa, etc.)" },
+  { "grupo": "5.1 Envio Final de Documentos ao Despachante", "descricao": "PI, contratos e e-mails de negociação (caso solicitado)" },
+
+  { "grupo": "5.2 Registro da DUIMP", "descricao": "Agendar a coleta / emitir DTA" },
+  { "grupo": "5.2 Registro da DUIMP", "descricao": "Registrar DUIMP e gerar Impostos" },
+  { "grupo": "5.2 Registro da DUIMP", "descricao": "Aguardar canal de parametrização: Verde (liberação automática) / Amarelo (análise documental) / Vermelho (conferência física) / Cinza (investigação de valor)" },
+
+  { "grupo": "5.3 Pagamentos de Tributos e Taxas", "descricao": "Pagar impostos federais (II, IPI, PIS, COFINS)" },
+  { "grupo": "5.3 Pagamentos de Tributos e Taxas", "descricao": "Pagar ICMS (se houver)" },
+  { "grupo": "5.3 Pagamentos de Tributos e Taxas", "descricao": "Gerar comprovantes e enviar ao despachante" },
+
+  { "grupo": "5.4 Pagamento de Frete e Taxas", "descricao": "Pagar frete internacional (se for responsabilidade sua — ex: FOB)" },
+  { "grupo": "5.4 Pagamento de Frete e Taxas", "descricao": "Pagar THC, local charges, demais despesas e honorários" },
+
+  { "grupo": "5.5 Comunicação Interna", "descricao": "Validar disponibilidade de transporte interno para retirada do porto" },
+  { "grupo": "5.5 Comunicação Interna", "descricao": "Notificar o time fiscal/contábil para início de preparação de NF de entrada" },
+  { "grupo": "5.5 Comunicação Interna", "descricao": "Atualizar Status no App" },
+
+  { "grupo": "5.6 Liberação do Container", "descricao": "Container liberado pela Receita Federal/SEFAZ" },
+  { "grupo": "5.6 Liberação do Container", "descricao": "Agendar retirada do container e transporte até o armazém/centro de distribuição" },
+  { "grupo": "5.6 Liberação do Container", "descricao": "Registrar número da DUIMP e data da liberação" },
+  { "grupo": "5.6 Liberação do Container", "descricao": "Validar documentação para transporte interno" },
+  { "grupo": "5.6 Liberação do Container", "descricao": "Enviar aviso de chegada para a equipe de recebimento" },
+
+  { "grupo": "6.1 Recebimento no Centro de Distribuição / Armazém", "descricao": "Container chegou no endereço correto" },
+  { "grupo": "6.1 Recebimento no Centro de Distribuição / Armazém", "descricao": "Registrar fotos e vídeos do recebimento: tirando o lacre, descarregando, limpando o container" },
+  { "grupo": "6.1 Recebimento no Centro de Distribuição / Armazém", "descricao": "Carga descarregada com conferência física (checado: avarias, quantidade, caixas violadas)" },
+  { "grupo": "6.1 Recebimento no Centro de Distribuição / Armazém", "descricao": "Registrar fotos e vídeos da limpeza do container" },
+
+  { "grupo": "6.2 Conferência de Documentos e Carga", "descricao": "Cruzar dados da DI com o que foi efetivamente recebido" },
+  { "grupo": "6.2 Conferência de Documentos e Carga", "descricao": "Validar invoice, packing list e quantidades físicas" },
+  { "grupo": "6.2 Conferência de Documentos e Carga", "descricao": "Apontar e registrar divergências (se houver)" },
+  { "grupo": "6.2 Conferência de Documentos e Carga", "descricao": "Assinatura de recebimento com responsável pelo armazém" },
+
+  { "grupo": "6.3 Lançamento Fiscal e Contábil", "descricao": "Emissão da Nota Fiscal de Entrada (baseada na DI)" },
+  { "grupo": "6.3 Lançamento Fiscal e Contábil", "descricao": "Conferência dos tributos pagos e valores corretos no XML" },
+  { "grupo": "6.3 Lançamento Fiscal e Contábil", "descricao": "Enviar NF para o departamento fiscal e contábil" },
+  { "grupo": "6.3 Lançamento Fiscal e Contábil", "descricao": "Arquivar digitalmente todos os documentos: DI, comprovantes, NF-e, recibos de pagamento, certificados" },
+
+  { "grupo": "6.4 Atualização de Custos e Estoque", "descricao": "Calcular custo médio do produto importado (CIF + impostos + taxas)" },
+  { "grupo": "6.4 Atualização de Custos e Estoque", "descricao": "Atualizar ficha de produto no ERP / sistema" },
+  { "grupo": "6.4 Atualização de Custos e Estoque", "descricao": "Lançar entrada de estoque dos produtos" },
+  { "grupo": "6.4 Atualização de Custos e Estoque", "descricao": "Atualizar saldo físico e contábil" },
+
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Atualizar status final no App: \"Finalizado / Armazenado\"" },
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Relatório final da importação (quantidade, custos, desvios)" },
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Feedback interno: pontos de atenção ou melhoria" },
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Encaminhar tudo para auditoria interna ou futura referência" },
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Pagamento total da carga efetuado" },
+  { "grupo": "6.5 Encerramento da Operação", "descricao": "Arquivar documentação legal/fiscal" }
+]

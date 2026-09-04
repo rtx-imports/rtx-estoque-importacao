@@ -27,10 +27,25 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** Para respostas binárias (ex.: exportação .xlsx) — não tenta parsear como JSON. */
+async function requestBlob(path: string, options: RequestInit = {}): Promise<{ blob: Blob; filename: string | null }> {
+  const hasBody = options.body !== undefined && options.body !== null;
+  const headers = hasBody ? { "Content-Type": "application/json", ...options.headers } : options.headers;
+  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body);
+  }
+  const disposition = response.headers.get("Content-Disposition");
+  const match = disposition?.match(/filename="?([^"]+)"?/);
+  return { blob: await response.blob(), filename: match?.[1] ?? null };
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body instanceof FormData ? body : JSON.stringify(body) }),
+  postBlob: (path: string, body?: unknown) => requestBlob(path, { method: "POST", body: JSON.stringify(body) }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

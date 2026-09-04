@@ -34,7 +34,7 @@ describe("pedidos", () => {
 
     expect(response.statusCode).toBe(201);
     const body = response.json();
-    expect(body.status).toBe("rascunho");
+    expect(body.status).toBe("cotacao_proposta");
     expect(body.moeda).toBe("EUR");
     expect(body.itens).toEqual([]);
   });
@@ -60,11 +60,11 @@ describe("pedidos", () => {
     const response = await app.inject({
       method: "PUT",
       url: `/pedidos/${id}`,
-      payload: { status: "enviado_fornecedor" },
+      payload: { status: "prod_iniciada_sem_pgto" },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().status).toBe("enviado_fornecedor");
+    expect(response.json().status).toBe("prod_iniciada_sem_pgto");
   });
 
   it("rejeita status fora do enum permitido", async () => {

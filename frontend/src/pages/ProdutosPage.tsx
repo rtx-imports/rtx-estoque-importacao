@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ApiError } from "../api/client";
 import { useCreateProduto, useEditarProduto, useSetEstoque, useTodosProdutos } from "../api/compra";
-import { useImportarCatalogoTiny, useTinyProdutos } from "../api/tiny";
+import { useImportarCatalogoTiny, useSincronizarEstoqueLote, useTinyProdutos } from "../api/tiny";
 import { useTiposProduto } from "../api/tiposProduto";
 import type { TinyProduto } from "../api/types";
 
@@ -77,15 +77,20 @@ export function ProdutosPage() {
           <p className="text-sm text-slate-500">Nenhum produto encontrado para "{busca}".</p>
         )}
         {!!produtosFiltrados?.length && (
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
                 <th className="py-2">SKU</th>
                 <th className="py-2">Descrição</th>
+                <th className="py-2" title="Código do cliente (ex. DG3111G) — usado na coluna Item da Decisão de Compra">
+                  Client Code
+                </th>
+                <th className="py-2" title="Agrupa linhas na grade da Decisão de Compra">
+                  NCM
+                </th>
                 <th className="py-2">Tipo</th>
-                <th className="py-2 text-right">Unid./caixa</th>
-                <th className="py-2 text-right">Custo (USD)</th>
-                <th className="py-2 text-right" title="Puxado do Tiny na sincronização — ainda editável aqui">
+                <th className="py-2 text-right" title="Nunca sincronizado com o Tiny ainda (—) é diferente de confirmado zero (0)">
                   Estoque
                 </th>
                 <th className="py-2">Status</th>
@@ -96,6 +101,32 @@ export function ProdutosPage() {
                 <tr key={produto.sku} className="border-b border-slate-100">
                   <td className="py-2 font-medium">{produto.sku}</td>
                   <td className="py-2">{produto.descricao || "—"}</td>
+                  <td className="py-2">
+                    <input
+                      className={smallInputClass + " w-28 text-left"}
+                      defaultValue={produto.item_code ?? ""}
+                      placeholder="—"
+                      onBlur={(e) => {
+                        const valor = e.target.value.trim();
+                        if (valor !== (produto.item_code ?? "")) {
+                          editarProduto.mutate({ sku: produto.sku, data: { item_code: valor || null } });
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className="py-2">
+                    <input
+                      className={smallInputClass + " w-24 text-left"}
+                      defaultValue={produto.ncm ?? ""}
+                      placeholder="—"
+                      onBlur={(e) => {
+                        const valor = e.target.value.trim();
+                        if (valor !== (produto.ncm ?? "")) {
+                          editarProduto.mutate({ sku: produto.sku, data: { ncm: valor || null } });
+                        }
+                      }}
+                    />
+                  </td>
                   <td className="py-2">
                     <select
                       className={`rounded-full border-none px-2 py-0.5 text-xs ${
@@ -118,38 +149,11 @@ export function ProdutosPage() {
                   <td className="py-2 text-right">
                     <input
                       type="number"
-                      min={1}
-                      className={smallInputClass}
-                      defaultValue={produto.unidades_por_caixa}
-                      onBlur={(e) => {
-                        const valor = Number(e.target.value);
-                        if (Number.isFinite(valor) && valor > 0 && valor !== produto.unidades_por_caixa) {
-                          editarProduto.mutate({ sku: produto.sku, data: { unidades_por_caixa: valor } });
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="py-2 text-right">
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      className={smallInputClass}
-                      defaultValue={produto.custo_unit_usd}
-                      onBlur={(e) => {
-                        const valor = Number(e.target.value);
-                        if (Number.isFinite(valor) && valor >= 0 && valor !== produto.custo_unit_usd) {
-                          editarProduto.mutate({ sku: produto.sku, data: { custo_unit_usd: valor } });
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="py-2 text-right">
-                    <input
-                      type="number"
                       min={0}
                       className={smallInputClass}
-                      defaultValue={produto.estoque}
+                      defaultValue={produto.estoque ?? ""}
+                      placeholder="—"
+                      title={produto.estoque == null ? "Nunca sincronizado com o Tiny" : undefined}
                       onBlur={(e) => {
                         const valor = Number(e.target.value);
                         if (Number.isFinite(valor) && valor >= 0 && valor !== produto.estoque) {
@@ -173,6 +177,7 @@ export function ProdutosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
     </div>
@@ -181,48 +186,118 @@ export function ProdutosPage() {
 
 function SincronizarTinySection() {
   const importarCatalogo = useImportarCatalogoTiny();
+  const sincronizarLote = useSincronizarEstoqueLote();
   const [erro, setErro] = useState<string | null>(null);
-  const [resultado, setResultado] = useState<string | null>(null);
+  const [resultadoCatalogo, setResultadoCatalogo] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<{ feitos: number; total: number } | null>(null);
 
-  function handleSincronizar() {
+  function handleSincronizarCatalogo() {
     setErro(null);
-    setResultado(null);
+    setResultadoCatalogo(null);
     importarCatalogo.mutate(undefined, {
       onSuccess: (r) => {
-        setResultado(
+        setResultadoCatalogo(
           `${r.importados} produto(s) novo(s) importado(s) (de ${r.classificados} classificados como rolinho/placa ` +
             `entre os ${r.totalNoTiny} produtos do catálogo do Tiny; ${r.naoClassificados} não são rolinho/placa e ` +
-            `foram ignorados). ${r.jaExistiam} já existiam. Estoque atualizado em ${r.estoqueAtualizado} produto(s); ` +
-            `custo preenchido automaticamente em ${r.custoPreenchido} produto(s).`,
+            `foram ignorados). ${r.jaExistiam} já existiam; custo preenchido automaticamente em ${r.custoPreenchido} ` +
+            `produto(s). Agora clique em "Sincronizar estoque" pra puxar as quantidades.`,
         );
       },
       onError: (error) =>
         setErro(
           error instanceof ApiError && error.status === 503
             ? "Integração com o Tiny não configurada."
-            : "Falha ao sincronizar com o Tiny.",
+            : "Falha ao importar catálogo do Tiny.",
         ),
     });
   }
 
+  async function handleSincronizarEstoque() {
+    setErro(null);
+    let cursor: string | null = null;
+    let feitos = 0;
+    let total = 0;
+    let bloqueiosSeguidos = 0;
+    setProgresso({ feitos: 0, total: 0 });
+    // Em lotes (não é mais uma única requisição gigante): cada chamada processa até
+    // 100 produtos e volta rápido, então dá pra ver progresso e não trava em timeout
+    // de proxy no meio de um catálogo com milhares de SKUs.
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      let resultado;
+      try {
+        resultado = await sincronizarLote.mutateAsync(cursor);
+      } catch (error) {
+        setErro(
+          error instanceof ApiError && error.status === 503
+            ? "Integração com o Tiny não configurada."
+            : "Falha ao sincronizar estoque — tentando de novo é seguro, retoma de onde parou.",
+        );
+        return;
+      }
+      feitos += resultado.processados;
+      total = resultado.totalElegiveis;
+      setProgresso({ feitos, total });
+      cursor = resultado.proximoCursor;
+      if (resultado.bloqueado) {
+        bloqueiosSeguidos++;
+        if (bloqueiosSeguidos >= 3) {
+          setErro(
+            "O Tiny bloqueou por excesso de chamadas e continua bloqueado após algumas tentativas — espere " +
+              "alguns minutos e clique em \"Sincronizar estoque\" de novo (retoma de onde parou).",
+          );
+          return;
+        }
+        // O Tiny avisa "aguarde alguns minutos" — 90s de pausa antes de tentar de novo,
+        // bem mais que a pausa normal entre itens, pra não continuar batendo no bloqueio.
+        await new Promise((resolve) => setTimeout(resolve, 90_000));
+      } else {
+        bloqueiosSeguidos = 0;
+      }
+      if (!cursor) break;
+    }
+  }
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-1 text-sm font-semibold text-slate-800">Sincronizar catálogo do Tiny</h2>
+      <h2 className="mb-1 text-sm font-semibold text-slate-800">Sincronizar com o Tiny</h2>
       <p className="mb-3 text-xs text-slate-500">
-        Puxa o catálogo inteiro do Tiny de uma vez, classifica cada SKU em rolinho/placa e cadastra os que ainda
-        não existem (produtos já cadastrados não são duplicados). Também atualiza o estoque de cada produto
-        classificado (segue editável aqui depois) e preenche o custo de quem ainda está em 0, quando o SKU tem
-        custo conhecido. Pode demorar um pouco — percorre todas as páginas do Tiny e consulta o estoque de cada
-        produto classificado.
+        Dois passos separados: (1) puxa o catálogo inteiro do Tiny, classifica em rolinho/placa e cadastra os que
+        ainda não existem — rápido, dezenas de segundos; (2) sincroniza o estoque de cada produto já cadastrado —
+        mais lento (o Tiny limita quantas consultas por segundo), então roda em lotes com progresso visível em vez
+        de uma requisição só. Interromper e clicar de novo é seguro — retoma de onde parou, não duplica.
       </p>
-      <button
-        onClick={handleSincronizar}
-        disabled={importarCatalogo.isPending}
-        className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-      >
-        {importarCatalogo.isPending ? "Sincronizando..." : "Sincronizar agora"}
-      </button>
-      {resultado && <p className="mt-2 text-sm text-green-700">{resultado}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={handleSincronizarCatalogo}
+          disabled={importarCatalogo.isPending}
+          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {importarCatalogo.isPending ? "Importando catálogo..." : "1. Importar catálogo"}
+        </button>
+        <button
+          onClick={handleSincronizarEstoque}
+          disabled={sincronizarLote.isPending}
+          className="rounded-md bg-teal-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+        >
+          {sincronizarLote.isPending ? "Sincronizando estoque..." : "2. Sincronizar estoque"}
+        </button>
+      </div>
+      {progresso && progresso.total > 0 && (
+        <div className="mt-3">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full bg-teal-600 transition-all"
+              style={{ width: `${Math.min(100, (progresso.feitos / progresso.total) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {progresso.feitos} de {progresso.total} produtos sincronizados
+            {!sincronizarLote.isPending && progresso.feitos >= progresso.total && " — concluído."}
+          </p>
+        </div>
+      )}
+      {resultadoCatalogo && <p className="mt-2 text-sm text-green-700">{resultadoCatalogo}</p>}
       {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
     </section>
   );
@@ -230,7 +305,7 @@ function SincronizarTinySection() {
 
 function NovoProdutoSection() {
   const createProduto = useCreateProduto();
-  const [form, setForm] = useState({ sku: "", descricao: "", unidades_por_caixa: "1", custo_unit_usd: "0" });
+  const [form, setForm] = useState({ sku: "", descricao: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [buscaTiny, setBuscaTiny] = useState("");
   const buscaTinyDebounced = useDebounced(buscaTiny);
@@ -246,14 +321,9 @@ function NovoProdutoSection() {
     event.preventDefault();
     setErro(null);
     createProduto.mutate(
+      { sku: form.sku, descricao: form.descricao || undefined },
       {
-        sku: form.sku,
-        descricao: form.descricao || undefined,
-        unidades_por_caixa: Number(form.unidades_por_caixa),
-        custo_unit_usd: Number(form.custo_unit_usd),
-      },
-      {
-        onSuccess: () => setForm({ sku: "", descricao: "", unidades_por_caixa: "1", custo_unit_usd: "0" }),
+        onSuccess: () => setForm({ sku: "", descricao: "" }),
         onError: (error) =>
           setErro(error instanceof ApiError ? JSON.stringify(error.body) : "Erro ao cadastrar produto"),
       },
@@ -306,7 +376,7 @@ function NovoProdutoSection() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelClass}>SKU *</label>
           <input required className={inputClass} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
@@ -315,26 +385,7 @@ function NovoProdutoSection() {
           <label className={labelClass}>Descrição</label>
           <input className={inputClass} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
         </div>
-        <div>
-          <label className={labelClass}>Unid./caixa</label>
-          <input
-            type="number"
-            className={inputClass}
-            value={form.unidades_por_caixa}
-            onChange={(e) => setForm({ ...form, unidades_por_caixa: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Custo unit. (USD)</label>
-          <input
-            type="number"
-            step="any"
-            className={inputClass}
-            value={form.custo_unit_usd}
-            onChange={(e) => setForm({ ...form, custo_unit_usd: e.target.value })}
-          />
-        </div>
-        <div className="sm:col-span-5">
+        <div className="sm:col-span-3">
           <button
             type="submit"
             disabled={createProduto.isPending}

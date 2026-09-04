@@ -11,6 +11,12 @@ describe("dimensaoProduto", () => {
     expect(dimensaoProduto("SKU-CURTO", "rolinho")).toBeNull();
   });
 
+  it("aceita sufixo de width sem o 'C' final (confirmado batendo com a descrição real do produto)", () => {
+    // "01105BLKOUT100" = "Adesivo Vinil Blackout 1m x 1m"; "02101PREFOS120" = "... 2m x 120cm"
+    expect(dimensaoProduto("01105BLKOUT100", "rolinho")).toEqual({ lengthM: 1, widthM: 1 });
+    expect(dimensaoProduto("02101PREFOS120", "rolinho")).toEqual({ lengthM: 2, widthM: 1.2 });
+  });
+
   it("busca width/length de placa na tabela de-para (container.json não tem essa medida)", () => {
     expect(dimensaoProduto("30605PLMDNT60C", "placa")).toEqual({ widthM: 0.3, lengthM: 0.6 });
   });

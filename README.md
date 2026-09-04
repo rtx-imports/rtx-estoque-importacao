@@ -45,8 +45,16 @@ referência ao lado, buscado ao vivo da API pública do Banco Central.
 Produto não pertence a um fornecedor fixo — é catálogo puro (SKU + tipo rolinho/placa,
 classificado automaticamente pelo SKU do Tiny), e o fornecedor entra só na hora de gerar o
 pedido, resolvido por `tipo_produto_padrao` de cada fornecedor (DECISIONS.md, decisões 20 e
-23). Cadastro de produto fica na aba **Produtos**, não na Decisão de Compra: "Sincronizar
-catálogo do Tiny" puxa o catálogo inteiro de uma vez e cadastra os classificáveis em
-rolinho/placa (demora — percorre todas as páginas do Tiny), além de um cadastro manual
-avulso. Configure `TINY_TOKEN_RTX` em `backend/.env` para ativar (sem ele, a sincronização
-fica indisponível e o cadastro manual continua funcionando — DECISIONS.md, decisão 19).
+23). Cadastro de produto fica na aba **Produtos**, não na Decisão de Compra, em dois passos
+separados (cada um curto — segundos a poucas dezenas de segundos, nunca uma única chamada
+gigante): "1. Importar catálogo" cadastra os produtos classificáveis em rolinho/placa +
+guarda o id de cada um no Tiny (`tiny_id`); "2. Sincronizar estoque" puxa a quantidade em
+lotes, com barra de progresso, retomável se interromper. Além do botão manual, com
+`TINY_TOKEN_RTX` configurado um job em background (`src/jobs/estoqueAutosync.ts`) sincroniza
+sozinho um pouco de estoque a cada 5 min (sempre os produtos mais desatualizados primeiro) —
+nunca processa o catálogo inteiro de uma vez, então não bate no rate limit do Tiny numa
+rajada; desligar com `DISABLE_ESTOQUE_AUTOSYNC=1`. Sem `TINY_TOKEN_RTX`, toda a sincronização
+fica indisponível e o cadastro manual continua funcionando (DECISIONS.md, decisão 19). Cada
+empresa do grupo (RTX, BG, BW, BRA) tem sua própria conta/estoque no Tiny — não
+compartilham; este sistema lê só a conta RTX (o estoque físico de importação, que é o que
+importa pra decisão de compra).

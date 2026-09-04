@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import { estoqueRoutes } from "./routes/estoque.js";
 import { fornecedoresRoutes } from "./routes/fornecedores.js";
 import { parametrosRoutes } from "./routes/parametros.js";
+import { pedidoChecklistRoutes } from "./routes/pedidoChecklist.js";
 import { pedidoDocumentosRoutes } from "./routes/pedidoDocumentos.js";
 import { pedidosRoutes } from "./routes/pedidos.js";
 import { produtosRoutes } from "./routes/produtos.js";
@@ -20,6 +21,7 @@ export function buildApp() {
   app.register(fornecedoresRoutes);
   app.register(pedidosRoutes);
   app.register(pedidoDocumentosRoutes);
+  app.register(pedidoChecklistRoutes);
   app.register(produtosRoutes);
   app.register(estoqueRoutes);
   app.register(parametrosRoutes);

@@ -10,6 +10,12 @@ const produtoObjectSchema = z.object({
   // rolinho/placa) — referencia tipos_produto.nome (cadastro dinâmico),
   // então também aceita qualquer tipo novo cadastrado ali (atribuição manual).
   tipo: z.string().min(1).nullable().optional(),
+  // Client code (ex. "DG3111G") — distinto do sku canônico interno.
+  // Usado na coluna "Item" da Decisão de Compra, igual à planilha de referência.
+  item_code: z.string().nullable().optional(),
+  // NCM — agrupa linhas na grade da Decisão de Compra, mesmo padrão de bloco
+  // por NCM da planilha de referência.
+  ncm: z.string().nullable().optional(),
 });
 
 export const produtoInputSchema = produtoObjectSchema;

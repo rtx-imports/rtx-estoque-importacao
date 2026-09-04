@@ -2,21 +2,17 @@ import type { FastifyInstance } from "fastify";
 import { sql } from "../db.js";
 import { classificarTipoPorSku } from "../domain/skuTipo.js";
 import { custoUnitario } from "../domain/custos.js";
-import {
-  buscarCatalogoCompletoTiny,
-  buscarEstoqueTiny,
-  PAUSA_ENTRE_PAGINAS_MS,
-  TinyNaoConfiguradoError,
-} from "../repo/tinyProdutos.js";
+import { sincronizarLoteEstoque } from "../domain/estoqueSync.js";
+import { buscarCatalogoCompletoTiny, TinyNaoConfiguradoError } from "../repo/tinyProdutos.js";
 import { produtoInputSchema, produtoUpdateSchema } from "../schemas/produto.js";
 
-function aguardar(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Junta o produto com o estoque atual (0 quando o SKU nunca teve linha em `estoque`). */
+/** Junta o produto com o estoque atual. `estoque` vem NULL (não 0) quando o SKU
+ * nunca teve linha na tabela `estoque` — nunca foi sincronizado com o Tiny ainda,
+ * distinto de "sincronizado e confirmado zero". Antes isso vinha achatado em 0
+ * pelo COALESCE, o que escondia sincronizações incompletas (ver histórico: só
+ * uma fração do catálogo chegou a ser consultada numa rodada anterior). */
 const SELECT_COM_ESTOQUE = sql`
-  SELECT produtos.*, COALESCE(estoque.quantidade, 0) AS estoque
+  SELECT produtos.*, estoque.quantidade AS estoque
   FROM produtos
   LEFT JOIN estoque ON estoque.sku = produtos.sku
 `;
@@ -54,48 +50,53 @@ export async function produtosRoutes(app: FastifyInstance) {
     const tipo = data.tipo !== undefined ? data.tipo : classificarTipoPorSku(data.sku);
 
     const [produto] = await sql`
-      INSERT INTO produtos (sku, descricao, unidades_por_caixa, custo_unit_usd, ativo, tipo)
-      VALUES (${data.sku}, ${data.descricao}, ${data.unidades_por_caixa}, ${data.custo_unit_usd}, ${data.ativo}, ${tipo})
+      INSERT INTO produtos (sku, descricao, unidades_por_caixa, custo_unit_usd, ativo, tipo, item_code, ncm)
+      VALUES (
+        ${data.sku}, ${data.descricao}, ${data.unidades_por_caixa}, ${data.custo_unit_usd}, ${data.ativo}, ${tipo},
+        ${data.item_code ?? null}, ${data.ncm ?? null}
+      )
       RETURNING *
     `;
     return reply.code(201).send(produto);
   });
 
+  /**
+   * Importa o catálogo (rápido: só pagina a busca do Tiny e grava produtos —
+   * sem chamada de estoque por SKU). O estoque NÃO é mais puxado aqui: com
+   * milhares de SKUs, uma chamada de estoque por produto (+ pausa de rate
+   * limit) numa única requisição HTTP levava dezenas de minutos, arriscando
+   * timeout de proxy no meio do caminho e falhando sem deixar claro quanto
+   * já tinha sido feito. Ver `POST /produtos/sincronizar-estoque` — endpoint
+   * em lotes, chamado repetidamente pelo front com barra de progresso.
+   */
   app.post("/produtos/importar-tiny-catalogo", async (_request, reply) => {
     try {
       const { totalNoTiny, classificados } = await buscarCatalogoCompletoTiny();
 
       const skus = classificados.map((p) => p.sku);
-      const existentesRows = skus.length ? await sql`SELECT sku FROM produtos WHERE sku = ANY(${skus})` : [];
-      const existentes = new Set(existentesRows.map((r) => r.sku as string));
+      const existentesRows = skus.length
+        ? await sql<{ sku: string; tiny_id: string | null }[]>`SELECT sku, tiny_id FROM produtos WHERE sku = ANY(${skus})`
+        : [];
+      const existentes = new Map(existentesRows.map((r) => [r.sku, r.tiny_id]));
       const novos = classificados.filter((p) => !existentes.has(p.sku));
 
       for (const p of novos) {
         const custoSugerido = custoUnitario(p.sku, p.tipoSugerido, "atual") ?? 0;
         await sql`
-          INSERT INTO produtos (sku, descricao, tipo, custo_unit_usd)
-          VALUES (${p.sku}, ${p.nome}, ${p.tipoSugerido}, ${custoSugerido})
+          INSERT INTO produtos (sku, descricao, tipo, custo_unit_usd, tiny_id)
+          VALUES (${p.sku}, ${p.nome}, ${p.tipoSugerido}, ${custoSugerido}, ${p.tinyId})
         `;
       }
 
-      // Estoque (pedido de Beatriz: "puxe o estoque no tiny na sincronização
-      // também") — sugestão a cada sync, continua editável na tela depois
-      // (ver DECISIONS.md). Best-effort por SKU: um produto sem estoque
-      // legível no Tiny não derruba a sincronização inteira.
-      let estoqueAtualizado = 0;
+      // Backfill de tiny_id em produtos que já existiam sem esse campo (cadastro
+      // manual, ou importados antes desta coluna existir) — sem isso, o produto
+      // nunca entraria no lote de sincronização de estoque.
+      let tinyIdPreenchido = 0;
       for (const p of classificados) {
-        try {
-          const quantidade = await buscarEstoqueTiny(p.tinyId);
-          await sql`
-            INSERT INTO estoque (sku, quantidade, atualizado_em)
-            VALUES (${p.sku}, ${quantidade}, now())
-            ON CONFLICT (sku) DO UPDATE SET quantidade = ${quantidade}, atualizado_em = now()
-          `;
-          estoqueAtualizado++;
-        } catch {
-          // segue pro próximo SKU — não trava a sincronização inteira.
+        if (existentes.has(p.sku) && !existentes.get(p.sku)) {
+          await sql`UPDATE produtos SET tiny_id = ${p.tinyId} WHERE sku = ${p.sku}`;
+          tinyIdPreenchido++;
         }
-        await aguardar(PAUSA_ENTRE_PAGINAS_MS);
       }
 
       // Custo (pedido de Beatriz: "preencher os custos de cada produto") —
@@ -119,7 +120,7 @@ export async function produtosRoutes(app: FastifyInstance) {
         naoClassificados: totalNoTiny - classificados.length,
         importados: novos.length,
         jaExistiam: existentes.size,
-        estoqueAtualizado,
+        tinyIdPreenchido,
         custoPreenchido,
       });
     } catch (error) {
@@ -129,6 +130,62 @@ export async function produtosRoutes(app: FastifyInstance) {
       app.log.error(error);
       return reply.code(502).send({ error: "Falha ao importar catálogo do Tiny" });
     }
+  });
+
+  // 50 × pausa de 1100ms entre chamadas (tinyProdutos.ts) ≈ 55-60s por lote — margem
+  // segura sob timeouts de proxy típicos em produção (Railway/nginx costumam cortar
+  // em 60-120s); 100 itens levaria ~110s e arriscaria estourar isso.
+  const LOTE_ESTOQUE = 50;
+
+  /**
+   * Sincroniza estoque em lotes (não mais dentro do import de catálogo, ver
+   * comentário acima). Cursor por SKU (ordem estável) — o front chama de
+   * novo com `cursor` até `proximoCursor` vir null. Cada lote é uma
+   * requisição HTTP curta (≤50 produtos × ~pausa de rate limit), então não
+   * arrisca timeout mesmo sincronizando o catálogo inteiro aos poucos. Além
+   * deste botão manual, existe um job automático em background
+   * (`jobs/estoqueAutosync.ts`) que roda sozinho a cada alguns minutos —
+   * este endpoint é só pra forçar/acompanhar uma rodada na hora.
+   */
+  app.post("/produtos/sincronizar-estoque", async (request, reply) => {
+    const { cursor } = (request.body ?? {}) as { cursor?: string };
+    if (!process.env.TINY_TOKEN_RTX) {
+      return reply.code(503).send({ error: "Integração com o Tiny não configurada" });
+    }
+
+    const produtos = await sql<{ sku: string; tiny_id: string }[]>`
+      SELECT sku, tiny_id FROM produtos
+      WHERE tiny_id IS NOT NULL AND sku > ${cursor ?? ""}
+      ORDER BY sku
+      LIMIT ${LOTE_ESTOQUE}
+    `;
+
+    let resultado;
+    try {
+      resultado = await sincronizarLoteEstoque(produtos);
+    } catch (error) {
+      if (error instanceof TinyNaoConfiguradoError) {
+        return reply.code(503).send({ error: "Integração com o Tiny não configurada" });
+      }
+      throw error;
+    }
+    const { processados, atualizados, falhas, bloqueado } = resultado;
+
+    const [{ total }] = await sql<{ total: string }[]>`SELECT count(*) AS total FROM produtos WHERE tiny_id IS NOT NULL`;
+    // Se bloqueou, o próximo cursor aponta pro item ANTES do que travou, pra
+    // retomar exatamente dele (não foi processado) — se travou logo no
+    // primeiro item do lote, volta pro cursor recebido (reprocessa o lote
+    // inteiro do mesmo ponto).
+    let proximoCursor: string | null;
+    if (bloqueado) {
+      proximoCursor = processados > 0 ? produtos[processados - 1].sku : cursor ?? "";
+    } else if (processados === LOTE_ESTOQUE) {
+      proximoCursor = produtos[processados - 1].sku;
+    } else {
+      proximoCursor = null;
+    }
+
+    return { processados, atualizados, falhas, bloqueado, proximoCursor, totalElegiveis: Number(total) };
   });
 
   app.put("/produtos/:sku", async (request, reply) => {
@@ -148,6 +205,8 @@ export async function produtosRoutes(app: FastifyInstance) {
     const custoUnitUsd = data.custo_unit_usd ?? existing.custo_unit_usd;
     const ativo = data.ativo ?? existing.ativo;
     const tipo = data.tipo !== undefined ? data.tipo : existing.tipo;
+    const itemCode = data.item_code !== undefined ? data.item_code : existing.item_code;
+    const ncm = data.ncm !== undefined ? data.ncm : existing.ncm;
 
     const [produto] = await sql`
       UPDATE produtos SET
@@ -156,6 +215,8 @@ export async function produtosRoutes(app: FastifyInstance) {
         custo_unit_usd = ${custoUnitUsd},
         ativo = ${ativo},
         tipo = ${tipo},
+        item_code = ${itemCode},
+        ncm = ${ncm},
         atualizado_em = now()
       WHERE sku = ${sku}
       RETURNING *
