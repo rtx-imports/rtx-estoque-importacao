@@ -44,7 +44,7 @@ export function KpiCards({ kpis }: { kpis: PropostaKpis }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {cards.map((card) => (
-        <div key={card.label} className="rounded-xl border border-border-rtx bg-white p-3.5">
+        <div key={card.label} className="rounded-xl border border-border-rtx bg-surface p-3.5">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-rtx">{card.label}</p>
           <p className={`num-tabular mt-1.5 text-lg font-semibold ${card.tom}`}>{card.valor}</p>
           <p className="text-[11px] text-muted-rtx">{card.sub}</p>

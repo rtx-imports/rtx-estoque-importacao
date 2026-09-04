@@ -35,7 +35,7 @@ export function EstoquePage() {
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         {galpoes.map((g) => (
-          <div key={g.nome} className="rounded-lg border border-border-rtx bg-white p-4">
+          <div key={g.nome} className="rounded-lg border border-border-rtx bg-surface p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-ink">{g.nome}</span>
               <span className="rounded-md border border-border-rtx bg-paper px-2 py-0.5 text-[11px] text-muted-rtx">
@@ -53,7 +53,7 @@ export function EstoquePage() {
         ))}
       </div>
 
-      <section className="rounded-lg border border-border-rtx bg-white">
+      <section className="rounded-lg border border-border-rtx bg-surface">
         <div className="border-b border-border-rtx px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Movimentações recentes</h2>
         </div>

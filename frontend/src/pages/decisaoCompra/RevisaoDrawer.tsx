@@ -84,7 +84,7 @@ export function RevisaoDrawer({
   return (
     <div className="fixed inset-0 z-30 flex justify-end bg-black/30" onClick={onClose}>
       <div
-        className="flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-white p-5 shadow-xl"
+        className="flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-surface p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">

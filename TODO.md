@@ -114,10 +114,6 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   verdade implementada — é rascunho de fase futura. Permissões por usuário
   (quem pode editar o quê, por fase do processo) ficam pra avaliar depois,
   quando essa tarefa for priorizada — não desenhar agora.
-- [ ] **Modo claro/escuro no frontend** — pedido de Beatriz em 04/09/2026,
-  junto com o redesenho visual (paleta navy/dourado extraída da logo, ver
-  guia de estilo publicado como Artifact nesta sessão). Ainda não
-  implementado no React real — só existe como conceito no protótipo visual.
 - [x] **Aplicar a paleta/tipografia no React real** — feito em 04/09/2026,
   branch `visual/paleta-rtx`: sidebar com logo real, tokens de cor
   (`frontend/src/index.css`, navy/gold/paper/border/muted/info) aplicados
@@ -163,12 +159,26 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   como placeholder tracejado com "—", já que esses módulos não existem
   ainda — não inventar dado.
 - [x] **Páginas Configurações e Usuários** — feito em 04/09/2026, a pedido
-  de Beatriz ("faltou configurações e usuários"). Configurações
-  (`ConfiguracoesPage.tsx`) é dado real: extraí `ParametrosSection` de
-  dentro de `CompraPage.tsx` pra `decisaoCompra/ParametrosSection.tsx`
-  (aceita a prop `semToggle` — sempre aberta em Configurações, continua
-  recolhida por padrão dentro da Decisão de Compra, mesmo comportamento
-  de sempre) — não duplica a lógica de salvar/câmbio/PTAX. Usuários
-  (`UsuariosPage.tsx`) é conceito/placeholder — autenticação real não
-  existe (ver item "Suporte a mais de um usuário" acima), banner deixa
-  isso explícito. Novo grupo "Sistema" no rodapé da sidebar.
+  de Beatriz ("faltou configurações e usuários"). Novo grupo "Sistema" no
+  rodapé da sidebar. Usuários (`UsuariosPage.tsx`) é conceito/placeholder
+  — autenticação real não existe (ver item "Suporte a mais de um usuário"
+  acima), banner deixa isso explícito.
+  - Correção da usuária logo em seguida: Configurações NÃO é os
+    Parâmetros do Cálculo (isso é específico da Decisão de Compra e
+    continua só lá, dentro do collapse de sempre — `ParametrosSection`
+    ficou extraída em `decisaoCompra/ParametrosSection.tsx` só porque já
+    tinha sido movida antes, não porque aparece em Configurações).
+    Configurações é pra padrão geral de app.
+- [x] **Modo claro/escuro no frontend** — feito de verdade em 04/09/2026
+  (estava pendente, virou real quando Configurações pediu conteúdo
+  próprio): `frontend/src/theme.ts` (tipos `light`/`dark`/`system`,
+  persistido em localStorage, aplicado via `data-theme` na tag `<html>`
+  antes do primeiro paint em `main.tsx`). `index.css` ganhou o token
+  `--color-surface` (cards eram `bg-white` fixo — trocado por
+  `bg-surface` em todo o app) e os overrides de dark pra
+  paper/surface/ink/border/muted/info. Sidebar (navy) e dourado não
+  mudam de propósito — só a área de conteúdo troca. Seletor em
+  Configurações (Claro/Escuro/Sistema), testado nas telas principais.
+  Badges semânticos fixos (bg-emerald-100 etc., cores de status/ABC/XYZ)
+  não ganharam variante dark ainda — ficam legíveis mas não "elegantes"
+  no escuro; ajustar se incomodar no uso real.

@@ -112,7 +112,7 @@ export function FornecedoresPage() {
     <div className="space-y-6">
       <TiposProdutoSection />
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-ink">
           {editingId ? "Editando fornecedor" : "Novo fornecedor"}
         </h2>
@@ -211,7 +211,7 @@ export function FornecedoresPage() {
         {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
       </section>
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Fornecedores</h2>
           <label className="flex items-center gap-2 text-sm text-muted-rtx">
@@ -365,7 +365,7 @@ function TiposProdutoSection() {
   }
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <h2 className="mb-1 text-sm font-semibold text-ink">Tipos de produto</h2>
       <p className="mb-3 text-xs text-muted-rtx">Cadastro dos tipos que um fornecedor pode vender.</p>
 

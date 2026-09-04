@@ -66,7 +66,7 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
 
   return (
     <section className="space-y-4">
-      <div className="rounded-lg border border-border-rtx bg-white p-4">
+      <div className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Cenário</h2>
           {alterado && (
@@ -126,11 +126,11 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
       {resultado && (
         <>
           <KpiCards kpis={resultado.kpis} />
-          <div className="rounded-lg border border-border-rtx bg-white p-4">
+          <div className="rounded-lg border border-border-rtx bg-surface p-4">
             <h3 className="mb-3 text-sm font-semibold text-ink">Necessidade por produto neste cenário</h3>
             <div className="max-h-[50vh] overflow-auto rounded-md border border-border-rtx">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-white">
+                <thead className="sticky top-0 bg-surface">
                   <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
                     <th className="px-2 py-2">SKU</th>
                     <th className="px-2 py-2">Descrição</th>

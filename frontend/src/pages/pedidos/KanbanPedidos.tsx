@@ -74,7 +74,7 @@ export function KanbanPedidos({ pedidos, fornecedorPorId }: KanbanPedidosProps) 
                   }}
                   onDragEnd={() => setArrastando(null)}
                   onClick={() => navigate(`/pedidos/${pedido.id}`)}
-                  className={`cursor-pointer rounded-md border-l-[3px] bg-white p-2 text-sm shadow-sm hover:shadow ${cor.borda} ${
+                  className={`cursor-pointer rounded-md border-l-[3px] bg-surface p-2 text-sm shadow-sm hover:shadow ${cor.borda} ${
                     arrastando === pedido.id ? "opacity-40" : ""
                   }`}
                 >

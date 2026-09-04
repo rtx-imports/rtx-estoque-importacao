@@ -132,7 +132,7 @@ export function App() {
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <header className="flex items-center justify-between border-b border-border-rtx bg-white px-7 py-3">
+        <header className="flex items-center justify-between border-b border-border-rtx bg-surface px-7 py-3">
           <span className="font-display text-sm font-semibold text-ink">RTX Imports</span>
           <div className="flex items-center gap-4">
             <CambioIndicador />

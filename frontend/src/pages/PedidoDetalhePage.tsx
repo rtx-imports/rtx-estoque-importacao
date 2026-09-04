@@ -34,7 +34,7 @@ export function PedidoDetalhePage() {
         ← Voltar para pedidos
       </Link>
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-ink">
@@ -117,7 +117,7 @@ function ChecklistSection({
   }
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-ink">Checklist</h2>
         {checklist.length > 0 && (
@@ -252,7 +252,7 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
   const totalPedido = itens.reduce((soma, item) => soma + item.valor_total, 0);
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <h2 className="mb-3 text-sm font-semibold text-ink">Itens</h2>
 
       <div className="mb-4 rounded-md border border-info bg-info-bg px-3 py-2 text-xs text-info">
@@ -401,7 +401,7 @@ function DocumentosSection({
   }
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <h2 className="mb-3 text-sm font-semibold text-ink">Documentos</h2>
 
       <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-4">

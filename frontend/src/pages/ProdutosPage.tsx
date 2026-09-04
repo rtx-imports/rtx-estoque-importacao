@@ -42,7 +42,7 @@ export function ProdutosPage() {
       <SincronizarTinySection />
       <NovoProdutoSection />
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-ink">Produtos</h2>
           <div className="flex gap-3">
@@ -259,7 +259,7 @@ function SincronizarTinySection() {
   }
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <h2 className="mb-1 text-sm font-semibold text-ink">Sincronizar com o Tiny</h2>
       <p className="mb-3 text-xs text-muted-rtx">
         Dois passos separados: (1) puxa o catálogo inteiro do Tiny, classifica em rolinho/placa e cadastra os que
@@ -331,7 +331,7 @@ function NovoProdutoSection() {
   }
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <h2 className="mb-3 text-sm font-semibold text-ink">Novo produto (avulso)</h2>
 
       <div className="relative mb-3">
@@ -350,7 +350,7 @@ function NovoProdutoSection() {
           <p className="mt-1 text-xs text-red-600">Falha ao buscar no Tiny — cadastre manualmente.</p>
         )}
         {!!resultadoBusca?.produtos.length && (
-          <ul className="absolute z-10 mt-1 max-h-48 w-full divide-y divide-border-rtx overflow-y-auto rounded-md border border-border-rtx bg-white text-sm shadow-md">
+          <ul className="absolute z-10 mt-1 max-h-48 w-full divide-y divide-border-rtx overflow-y-auto rounded-md border border-border-rtx bg-surface text-sm shadow-md">
             {resultadoBusca.produtos.map((produto) => (
               <li key={produto.tinyId}>
                 <button

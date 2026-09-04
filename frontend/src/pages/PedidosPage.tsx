@@ -36,7 +36,7 @@ export function PedidosPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-ink">Novo pedido</h2>
         {!fornecedores?.length ? (
           <p className="text-sm text-muted-rtx">
@@ -89,7 +89,7 @@ export function PedidosPage() {
         {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
       </section>
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Pedidos</h2>
           <div className="flex gap-1">

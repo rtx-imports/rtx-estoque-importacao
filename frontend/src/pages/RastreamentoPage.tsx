@@ -24,7 +24,7 @@ export function RastreamentoPage() {
         custo-benefício em "material de apoio", ~US$100/mês tier Essential). Dados abaixo são exemplo.
       </ConceitoBanner>
 
-      <section className="rounded-lg border border-border-rtx bg-white">
+      <section className="rounded-lg border border-border-rtx bg-surface">
         <div className="border-b border-border-rtx px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Pedidos embarcados</h2>
         </div>

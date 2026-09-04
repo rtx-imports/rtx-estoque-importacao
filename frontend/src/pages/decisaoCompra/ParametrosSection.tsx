@@ -38,7 +38,7 @@ export function ParametrosSection({ semToggle = false }: { semToggle?: boolean }
   const mostrarCampos = semToggle || aberto;
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       {semToggle ? (
         <h2 className="text-sm font-semibold text-ink">Parâmetros do cálculo</h2>
       ) : (

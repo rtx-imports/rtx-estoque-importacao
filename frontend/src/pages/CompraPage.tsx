@@ -58,7 +58,7 @@ export function CompraPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <div className="mb-3 flex gap-1">
           {abas.map((aba) => (
             <button
@@ -140,7 +140,7 @@ function DecisaoCompraFornecedor({
 
   if (isLoading || !proposta) {
     return (
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <p className="text-sm text-muted-rtx">Calculando proposta...</p>
       </section>
     );
@@ -180,7 +180,7 @@ function DecisaoCompraFornecedor({
 
       {abaInterna === "grade" &&
         (proposta.itens.length === 0 ? (
-          <section className="rounded-lg border border-border-rtx bg-white p-4">
+          <section className="rounded-lg border border-border-rtx bg-surface p-4">
             <p className="text-sm text-muted-rtx">
               Nenhum produto desse tipo precisa de atenção agora — estoque + trânsito cobrem a demanda projetada.
             </p>

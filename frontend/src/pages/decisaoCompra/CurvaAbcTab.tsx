@@ -15,7 +15,7 @@ export function CurvaAbcTab({ itens }: { itens: PropostaItem[] }) {
   for (const item of itens) contagem[item.classeAbc]++;
 
   return (
-    <section className="rounded-lg border border-border-rtx bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-surface p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-ink">Curva ABC — relevância financeira</h2>
@@ -41,7 +41,7 @@ export function CurvaAbcTab({ itens }: { itens: PropostaItem[] }) {
 
       <div className="max-h-[65vh] overflow-auto rounded-md border border-border-rtx">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-white">
+          <thead className="sticky top-0 bg-surface">
             <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
               <th className="px-2 py-2">SKU</th>
               <th className="px-2 py-2">Descrição</th>

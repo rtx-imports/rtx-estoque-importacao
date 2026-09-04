@@ -110,7 +110,7 @@ export function InicioPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-3">
-        <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <section className="rounded-lg border border-border-rtx bg-surface p-4">
           <h2 className="mb-3 text-sm font-semibold text-ink">Pedidos por status</h2>
           <div className="space-y-2">
             {PEDIDO_STATUS.filter((s) => contagemPorStatus.has(s)).map((status) => (
@@ -124,7 +124,7 @@ export function InicioPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <section className="rounded-lg border border-border-rtx bg-surface p-4">
           <h2 className="mb-3 text-sm font-semibold text-ink">Câmbio</h2>
           {parametros ? (
             <>
@@ -145,7 +145,7 @@ export function InicioPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <section className="rounded-lg border border-border-rtx bg-surface p-4">
           <h2 className="mb-3 text-sm font-semibold text-ink">Sincronização de estoque</h2>
           <div className="h-1.5 overflow-hidden rounded-full border border-border-rtx bg-paper">
             <div className="h-full bg-gold" style={{ width: `${pctSincronizado}%` }} />
@@ -167,7 +167,7 @@ export function InicioPage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {["RTX", "BG", "BW", "BRA"].map((empresa) => (
-            <div key={empresa} className="rounded-lg border border-dashed border-info bg-white p-3">
+            <div key={empresa} className="rounded-lg border border-dashed border-info bg-surface p-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-info">{empresa}</p>
               <p className="mt-1.5 text-lg font-semibold text-info">—</p>
             </div>
@@ -178,7 +178,7 @@ export function InicioPage() {
         </p>
       </section>
 
-      <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-ink">Atalhos</h2>
         <div className="flex flex-wrap gap-2">
           <Link to="/compra" className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark">
@@ -198,7 +198,7 @@ export function InicioPage() {
 
 function KpiTile({ label, valor, sub, tom }: { label: string; valor: string; sub: string; tom: string }) {
   return (
-    <div className="rounded-xl border border-border-rtx bg-white p-3.5">
+    <div className="rounded-xl border border-border-rtx bg-surface p-3.5">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-rtx">{label}</p>
       <p className={`num-tabular mt-1.5 text-lg font-semibold ${tom}`}>{valor}</p>
       <p className="text-[11px] text-muted-rtx">{sub}</p>
