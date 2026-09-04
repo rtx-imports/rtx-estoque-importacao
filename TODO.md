@@ -61,6 +61,7 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
 - [ ] **Terminar sincronização de estoque completa** — job automático rodando
   sozinho (30 produtos/5min), cobre o catálogo inteiro (~3.200 produtos) em
   algumas horas.
+- [ ] **width e lenght das placas vazio** - investigar o motivo e padrão disso na planilha de pedido e invoice 
 - [ ] **3 SKUs classificados errado como "rolinho"** (na prática são
   espátulas/acessórios, sem dimensão real) — achado ao investigar
   Width/Length vazio; baixa prioridade, mas fica registrado.
@@ -74,3 +75,5 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
 - [ ] **Atualizar `custos.json`** quando a planilha de custo nova chegar (o
   gerador em si, `gen-custos.ts`, não foi portado — precisa rodar no
   `rtx-pedidos` e copiar o resultado, ou portar o gerador).
+- [ ] **Ajuste na tabela "Decisão de Compra"** - produto (ex.: DG3111G
+Self Adhesive Vinyl Glossy - 80/80GSM (Samples 02 pure white film)) tenha um conjunto de varias linhas das variações de tamanho dele - fica visualmente mais confortável - consultar em `rtx-pedidos`
