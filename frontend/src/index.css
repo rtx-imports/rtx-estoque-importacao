@@ -1,8 +1,50 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
+/*
+ * Paleta e tipografia da RTX Imports — extraídas por amostragem de pixel
+ * direto de logo-rtx.png (navy #1C232C e dourado #F0AC03), aprovadas por
+ * Beatriz no protótipo visual (Artifact "Sistema Visual RTX", 04/09/2026)
+ * antes de entrar no código. Semânticas (success/warning/danger/info)
+ * deslocadas do dourado de propósito, pra não competir com a cor de ação.
+ * Neutros com leve viés quente (não cinza puro) pra combinar com o dourado.
+ * Tipografia (ajustada por Beatriz em 04/09/2026): Geist é a fonte
+ * principal (títulos e texto de interface), Inter é a alternativa — entra
+ * no stack como fallback antes do genérico sans-serif, caso Geist não
+ * carregue. Números financeiros usam tabular-nums (largura fixa por
+ * dígito) pra colunas de valor alinharem certinho.
+ */
+@theme {
+  --color-navy: #1c232c;
+  --color-navy-2: #262f3b;
+  --color-navy-3: #333e4d;
+  --color-gold: #f0ac03;
+  --color-gold-dark: #c98a00;
+  --color-paper: #faf8f4;
+  --color-ink: #14181d;
+  --color-border-rtx: #e7e2d6;
+  --color-border-rtx-strong: #d8d3c4;
+  --color-muted-rtx: #7c7768;
+  --color-info: #3b7ec4;
+  --color-info-bg: #e8f1fa;
+
+  --font-display: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-rtx: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-paper text-ink font-sans;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+
+/* Números financeiros (valores, custos, câmbio) — largura fixa por dígito
+   pra colunas alinharem, mesmo fora da grade em IBM Plex Mono. */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Fonte monoespaçada usada nas telas de planilha (Decisão de Compra, Produtos) —

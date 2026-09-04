@@ -4,8 +4,8 @@ import type { Parametros } from "../../api/types";
 import { KpiCards } from "./KpiCards";
 import { formatarBRL, formatarUSD } from "./format";
 
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
+const labelClass = "block text-xs font-medium text-muted-rtx mb-1";
 
 function useDebounced<T>(valor: T, atrasoMs = 400): T {
   const [debounced, setDebounced] = useState(valor);
@@ -66,11 +66,11 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
 
   return (
     <section className="space-y-4">
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="rounded-lg border border-border-rtx bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Cenário</h2>
+          <h2 className="text-sm font-semibold text-ink">Cenário</h2>
           {alterado && (
-            <button onClick={resetar} className="text-xs font-medium text-blue-600 hover:underline">
+            <button onClick={resetar} className="text-xs font-medium text-gold-dark hover:underline">
               Voltar ao cenário atual
             </button>
           )}
@@ -115,23 +115,23 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
             />
           </div>
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-muted-rtx">
           Nada aqui é salvo — é só um teste de cenário. Pra valer pra sério, ajuste em "Parâmetros do cálculo" na
           aba Decisão de Compra.
         </p>
       </div>
 
-      {simular.isPending && !resultado && <p className="text-sm text-slate-500">Simulando...</p>}
+      {simular.isPending && !resultado && <p className="text-sm text-muted-rtx">Simulando...</p>}
 
       {resultado && (
         <>
           <KpiCards kpis={resultado.kpis} />
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-800">Necessidade por produto neste cenário</h3>
-            <div className="max-h-[50vh] overflow-auto rounded-md border border-slate-200">
+          <div className="rounded-lg border border-border-rtx bg-white p-4">
+            <h3 className="mb-3 text-sm font-semibold text-ink">Necessidade por produto neste cenário</h3>
+            <div className="max-h-[50vh] overflow-auto rounded-md border border-border-rtx">
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-white">
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+                  <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
                     <th className="px-2 py-2">SKU</th>
                     <th className="px-2 py-2">Descrição</th>
                     <th className="px-2 py-2 text-right">Qtd sugerida</th>
@@ -142,9 +142,9 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
                 </thead>
                 <tbody>
                   {resultado.itens.map((item) => (
-                    <tr key={item.sku} className="border-b border-slate-100">
+                    <tr key={item.sku} className="border-b border-border-rtx">
                       <td className="px-2 py-1.5 font-medium">{item.sku}</td>
-                      <td className="px-2 py-1.5 text-slate-600">{item.descricao}</td>
+                      <td className="px-2 py-1.5 text-muted-rtx">{item.descricao}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{item.necessidade}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatarUSD(item.custoUsd)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatarBRL(item.custoBrl)}</td>
@@ -155,7 +155,7 @@ export function SimulacoesTab({ fornecedorId, paramsAtual }: SimulacoesTabProps)
                   ))}
                   {!resultado.itens.length && (
                     <tr>
-                      <td colSpan={6} className="px-3 py-4 text-center text-sm text-slate-400">
+                      <td colSpan={6} className="px-3 py-4 text-center text-sm text-muted-rtx">
                         Nenhum produto precisaria de atenção neste cenário.
                       </td>
                     </tr>

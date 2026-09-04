@@ -11,8 +11,8 @@ import { KpiCards } from "./decisaoCompra/KpiCards";
 import { RevisaoDrawer } from "./decisaoCompra/RevisaoDrawer";
 import { SimulacoesTab } from "./decisaoCompra/SimulacoesTab";
 
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
+const labelClass = "block text-xs font-medium text-muted-rtx mb-1";
 
 /** Sentinela pra fornecedores sem nenhum tipo_produto cadastrado — não é um tipo de verdade. */
 const TAB_OUTROS = "outros";
@@ -58,7 +58,7 @@ export function CompraPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
         <div className="mb-3 flex gap-1">
           {abas.map((aba) => (
             <button
@@ -66,7 +66,7 @@ export function CompraPage() {
               onClick={() => setTab(aba.tipo)}
               className={
                 "rounded-md px-3 py-1.5 text-sm font-medium " +
-                (tab === aba.tipo ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+                (tab === aba.tipo ? "bg-navy text-white" : "bg-paper text-muted-rtx hover:bg-border-rtx")
               }
             >
               {aba.label}
@@ -75,7 +75,7 @@ export function CompraPage() {
         </div>
 
         {fornecedoresDoTab.length === 0 && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-rtx">
             Nenhum fornecedor cadastrado como "{abas.find((a) => a.tipo === tab)?.label}" ainda — ajuste o "Tipo de
             produto padrão" na tela de Fornecedores.
           </p>
@@ -94,7 +94,7 @@ export function CompraPage() {
           </div>
         )}
         {fornecedoresDoTab.length === 1 && (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-rtx">
             Fornecedor: <span className="font-medium">{fornecedoresDoTab[0].nome}</span>
           </p>
         )}
@@ -130,8 +130,8 @@ function ParametrosSection() {
     Date.now() - new Date(parametros.cambioAtualizadoEm).getTime() > 24 * 60 * 60 * 1000;
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <button onClick={() => setAberto(!aberto)} className="text-sm font-semibold text-slate-800">
+    <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <button onClick={() => setAberto(!aberto)} className="text-sm font-semibold text-ink">
         Parâmetros do cálculo {aberto ? "▲" : "▼"}
       </button>
       {aberto && (
@@ -143,7 +143,7 @@ function ParametrosSection() {
             return (
             <div key={campo.chave}>
               <label className={labelClass}>
-                {campo.label} {salvandoEste && <span className="text-blue-500">salvando…</span>}
+                {campo.label} {salvandoEste && <span className="text-gold-dark">salvando…</span>}
                 {salvoEste && <span className="text-emerald-600">✓ salvo</span>}
               </label>
               <input
@@ -166,14 +166,14 @@ function ParametrosSection() {
               />
               {campo.chave === "cambio" && (
                 <div className="mt-1 space-y-0.5 text-xs">
-                  <p className="text-slate-500">Comparar cotação comercial entre Santander e Banco do Brasil.</p>
-                  <p className="text-slate-500">
+                  <p className="text-muted-rtx">Comparar cotação comercial entre Santander e Banco do Brasil.</p>
+                  <p className="text-muted-rtx">
                     PTAX BCB (referência):{" "}
                     {parametros.ptaxReferencia
                       ? `R$ ${parametros.ptaxReferencia.valor.toFixed(4)} (${formatarData(parametros.ptaxReferencia.data)})`
                       : "indisponível"}
                   </p>
-                  <p className={cambioDesatualizado ? "font-medium text-amber-600" : "text-slate-500"}>
+                  <p className={cambioDesatualizado ? "font-medium text-amber-600" : "text-muted-rtx"}>
                     {parametros.cambioAtualizadoEm
                       ? `Ajustado em ${formatarDataHora(parametros.cambioAtualizadoEm)}${
                           cambioDesatualizado ? " — confira se ainda vale" : ""
@@ -226,8 +226,8 @@ function DecisaoCompraFornecedor({
 
   if (isLoading || !proposta) {
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="text-sm text-slate-500">Calculando proposta...</p>
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <p className="text-sm text-muted-rtx">Calculando proposta...</p>
       </section>
     );
   }
@@ -243,8 +243,8 @@ function DecisaoCompraFornecedor({
               key={aba.id}
               onClick={() => setAbaInterna(aba.id)}
               className={
-                "rounded-md px-3 py-1.5 text-sm font-medium " +
-                (abaInterna === aba.id ? "bg-blue-600 text-white" : "bg-white text-slate-600 hover:bg-slate-100")
+                "rounded-md border-b-2 px-3 py-1.5 text-sm font-medium " +
+                (abaInterna === aba.id ? "border-gold text-ink" : "border-transparent text-muted-rtx hover:text-ink")
               }
             >
               {aba.label}
@@ -255,7 +255,7 @@ function DecisaoCompraFornecedor({
           <button
             onClick={() => setDrawerAberto(true)}
             disabled={!selecionados.size}
-            className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-1.5 text-sm font-semibold text-navy hover:bg-gold-dark disabled:opacity-50"
           >
             Revisar e Exportar ({selecionados.size})
           </button>
@@ -266,8 +266,8 @@ function DecisaoCompraFornecedor({
 
       {abaInterna === "grade" &&
         (proposta.itens.length === 0 ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-sm text-slate-500">
+          <section className="rounded-lg border border-border-rtx bg-white p-4">
+            <p className="text-sm text-muted-rtx">
               Nenhum produto desse tipo precisa de atenção agora — estoque + trânsito cobrem a demanda projetada.
             </p>
           </section>

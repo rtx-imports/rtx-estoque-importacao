@@ -11,8 +11,8 @@ import { useCreateTipoProduto, useEditarTipoProduto, useExcluirTipoProduto, useT
 import { ApiError } from "../api/client";
 import type { Fornecedor } from "../api/types";
 
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
+const labelClass = "block text-xs font-medium text-muted-rtx mb-1";
 
 const FORM_VAZIO = {
   nome: "",
@@ -112,8 +112,8 @@ export function FornecedoresPage() {
     <div className="space-y-6">
       <TiposProdutoSection />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-ink">
           {editingId ? "Editando fornecedor" : "Novo fornecedor"}
         </h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -146,7 +146,7 @@ export function FornecedoresPage() {
             <label className={labelClass}>Tipos de produto que vende</label>
             <div className="flex flex-wrap items-center gap-3">
               {(tiposProduto ?? []).map((tipo) => (
-                <label key={tipo.nome} className="flex items-center gap-1.5 text-sm text-slate-700">
+                <label key={tipo.nome} className="flex items-center gap-1.5 text-sm text-ink">
                   <input
                     type="checkbox"
                     checked={form.tipos_produto.includes(tipo.nome)}
@@ -162,7 +162,7 @@ export function FornecedoresPage() {
                   {capitalizar(tipo.nome)}
                 </label>
               ))}
-              {!tiposProduto?.length && <span className="text-xs text-slate-500">Nenhum tipo cadastrado ainda.</span>}
+              {!tiposProduto?.length && <span className="text-xs text-muted-rtx">Nenhum tipo cadastrado ainda.</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export function FornecedoresPage() {
               checked={form.exige_pagamento_inicial}
               onChange={(e) => setForm({ ...form, exige_pagamento_inicial: e.target.checked })}
             />
-            <label htmlFor="exige_pagamento_inicial" className="text-sm text-slate-700">
+            <label htmlFor="exige_pagamento_inicial" className="text-sm text-ink">
               Exige pagamento inicial
             </label>
           </div>
@@ -193,7 +193,7 @@ export function FornecedoresPage() {
             <button
               type="submit"
               disabled={salvando}
-              className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
             >
               {salvando ? "Salvando..." : editingId ? "Salvar alterações" : "Cadastrar"}
             </button>
@@ -201,7 +201,7 @@ export function FornecedoresPage() {
               <button
                 type="button"
                 onClick={cancelarEdicao}
-                className="rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-md border border-border-rtx-strong px-4 py-1.5 text-sm font-medium text-muted-rtx hover:bg-paper"
               >
                 Cancelar
               </button>
@@ -211,10 +211,10 @@ export function FornecedoresPage() {
         {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Fornecedores</h2>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <h2 className="text-sm font-semibold text-ink">Fornecedores</h2>
+          <label className="flex items-center gap-2 text-sm text-muted-rtx">
             <input
               type="checkbox"
               checked={mostrarInativos}
@@ -224,14 +224,14 @@ export function FornecedoresPage() {
           </label>
         </div>
 
-        {isLoading && <p className="text-sm text-slate-500">Carregando...</p>}
+        {isLoading && <p className="text-sm text-muted-rtx">Carregando...</p>}
         {!isLoading && fornecedores?.length === 0 && (
-          <p className="text-sm text-slate-500">Nenhum fornecedor cadastrado ainda.</p>
+          <p className="text-sm text-muted-rtx">Nenhum fornecedor cadastrado ainda.</p>
         )}
         {!!fornecedores?.length && (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+              <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
                 <th className="py-2">Nome</th>
                 <th className="py-2">País</th>
                 <th className="py-2">Moeda</th>
@@ -242,7 +242,7 @@ export function FornecedoresPage() {
             </thead>
             <tbody>
               {fornecedores.map((fornecedor) => (
-                <tr key={fornecedor.id} className="border-b border-slate-100">
+                <tr key={fornecedor.id} className="border-b border-border-rtx">
                   <td className="py-2">{fornecedor.nome}</td>
                   <td className="py-2">{fornecedor.pais ?? "—"}</td>
                   <td className="py-2">{fornecedor.moeda_padrao}</td>
@@ -256,7 +256,7 @@ export function FornecedoresPage() {
                       className={
                         fornecedor.ativo
                           ? "rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700"
-                          : "rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
+                          : "rounded-full bg-paper px-2 py-0.5 text-xs text-muted-rtx"
                       }
                     >
                       {fornecedor.ativo ? "ativo" : "inativo"}
@@ -264,7 +264,7 @@ export function FornecedoresPage() {
                   </td>
                   <td className="py-2">
                     <div className="flex justify-end gap-3 text-xs">
-                      <button onClick={() => iniciarEdicao(fornecedor)} className="text-blue-600 hover:underline">
+                      <button onClick={() => iniciarEdicao(fornecedor)} className="text-gold-dark hover:underline">
                         Editar
                       </button>
                       {fornecedor.ativo ? (
@@ -365,9 +365,9 @@ function TiposProdutoSection() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-1 text-sm font-semibold text-slate-800">Tipos de produto</h2>
-      <p className="mb-3 text-xs text-slate-500">Cadastro dos tipos que um fornecedor pode vender.</p>
+    <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <h2 className="mb-1 text-sm font-semibold text-ink">Tipos de produto</h2>
+      <p className="mb-3 text-xs text-muted-rtx">Cadastro dos tipos que um fornecedor pode vender.</p>
 
       {!!tiposProduto?.length && (
         <ul className="mb-3 space-y-1.5">
@@ -388,20 +388,20 @@ function TiposProdutoSection() {
                   <button
                     onClick={() => salvarEdicao(tipo.nome)}
                     disabled={editarTipoProduto.isPending}
-                    className="text-xs font-medium text-blue-600 hover:underline"
+                    className="text-xs font-medium text-gold-dark hover:underline"
                   >
                     Salvar
                   </button>
-                  <button onClick={() => setEditando(null)} className="text-xs text-slate-500 hover:underline">
+                  <button onClick={() => setEditando(null)} className="text-xs text-muted-rtx hover:underline">
                     Cancelar
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-slate-700">{capitalizar(tipo.nome)}</span>
+                  <span className="flex-1 text-ink">{capitalizar(tipo.nome)}</span>
                   <button
                     onClick={() => setEditando({ nome: tipo.nome, valor: tipo.nome })}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-gold-dark hover:underline"
                   >
                     Editar
                   </button>
@@ -418,7 +418,7 @@ function TiposProdutoSection() {
           ))}
         </ul>
       )}
-      {!tiposProduto?.length && <p className="mb-3 text-xs text-slate-500">Nenhum tipo cadastrado ainda.</p>}
+      {!tiposProduto?.length && <p className="mb-3 text-xs text-muted-rtx">Nenhum tipo cadastrado ainda.</p>}
 
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <div className="flex-1">
@@ -434,7 +434,7 @@ function TiposProdutoSection() {
         <button
           type="submit"
           disabled={createTipoProduto.isPending}
-          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
         >
           {createTipoProduto.isPending ? "Salvando..." : "Cadastrar tipo"}
         </button>

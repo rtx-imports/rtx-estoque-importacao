@@ -6,8 +6,8 @@ import { useCreatePedido, usePedidos } from "../api/pedidos";
 import { PEDIDO_STATUS_LABEL } from "../api/types";
 import { KanbanPedidos } from "./pedidos/KanbanPedidos";
 
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
+const labelClass = "block text-xs font-medium text-muted-rtx mb-1";
 
 export function PedidosPage() {
   const navigate = useNavigate();
@@ -36,12 +36,12 @@ export function PedidosPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">Novo pedido</h2>
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Novo pedido</h2>
         {!fornecedores?.length ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-rtx">
             Cadastre um fornecedor primeiro na aba{" "}
-            <a href="/fornecedores" className="text-blue-600 underline">
+            <a href="/fornecedores" className="text-gold-dark underline">
               Fornecedores
             </a>
             .
@@ -79,7 +79,7 @@ export function PedidosPage() {
               <button
                 type="submit"
                 disabled={createPedido.isPending}
-                className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
               >
                 {createPedido.isPending ? "Criando..." : "Criar pedido"}
               </button>
@@ -89,15 +89,15 @@ export function PedidosPage() {
         {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Pedidos</h2>
+          <h2 className="text-sm font-semibold text-ink">Pedidos</h2>
           <div className="flex gap-1">
             <button
               onClick={() => setVisualizacao("kanban")}
               className={
                 "rounded-md px-3 py-1 text-xs font-medium " +
-                (visualizacao === "kanban" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+                (visualizacao === "kanban" ? "bg-navy text-white" : "bg-paper text-muted-rtx hover:bg-border-rtx")
               }
             >
               Kanban
@@ -106,22 +106,22 @@ export function PedidosPage() {
               onClick={() => setVisualizacao("lista")}
               className={
                 "rounded-md px-3 py-1 text-xs font-medium " +
-                (visualizacao === "lista" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+                (visualizacao === "lista" ? "bg-navy text-white" : "bg-paper text-muted-rtx hover:bg-border-rtx")
               }
             >
               Lista
             </button>
           </div>
         </div>
-        {isLoading && <p className="text-sm text-slate-500">Carregando...</p>}
-        {!isLoading && pedidos?.length === 0 && <p className="text-sm text-slate-500">Nenhum pedido criado ainda.</p>}
+        {isLoading && <p className="text-sm text-muted-rtx">Carregando...</p>}
+        {!isLoading && pedidos?.length === 0 && <p className="text-sm text-muted-rtx">Nenhum pedido criado ainda.</p>}
         {!!pedidos?.length && visualizacao === "kanban" && (
           <KanbanPedidos pedidos={pedidos} fornecedorPorId={fornecedorPorId} />
         )}
         {!!pedidos?.length && visualizacao === "lista" && (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+              <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
                 <th className="py-2">Referência</th>
                 <th className="py-2">Fornecedor</th>
                 <th className="py-2">Status</th>
@@ -133,13 +133,13 @@ export function PedidosPage() {
               {pedidos.map((pedido) => (
                 <tr
                   key={pedido.id}
-                  className="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
+                  className="cursor-pointer border-b border-border-rtx hover:bg-paper"
                   onClick={() => navigate(`/pedidos/${pedido.id}`)}
                 >
                   <td className="py-2">{pedido.numero_referencia ?? "—"}</td>
                   <td className="py-2">{fornecedorPorId.get(pedido.fornecedor_id) ?? pedido.fornecedor_id}</td>
                   <td className="py-2">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                    <span className="rounded-full bg-paper px-2 py-0.5 text-xs text-ink">
                       {PEDIDO_STATUS_LABEL[pedido.status]}
                     </span>
                   </td>

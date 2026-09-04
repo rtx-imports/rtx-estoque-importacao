@@ -4,23 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import type { Pedido, PedidoStatus } from "../../api/types";
 import { PEDIDO_STATUS, PEDIDO_STATUS_LABEL } from "../../api/types";
-
-/** Cor por status — pipeline real do ClickUp (PDF "ETAPAS IMPORTAÇÃO_CLICK
- * UP"): Cotação/Proposta até Finalizado Financeiro, "Cancelado" à parte. */
-const COR_STATUS: Record<PedidoStatus, { coluna: string; borda: string }> = {
-  cotacao_proposta: { coluna: "bg-rose-100 text-rose-700", borda: "border-l-rose-500" },
-  prod_iniciada_sem_pgto: { coluna: "bg-orange-100 text-orange-700", borda: "border-l-orange-500" },
-  prod_iniciada_pgto_ok: { coluna: "bg-slate-200 text-slate-700", borda: "border-l-slate-500" },
-  prod_finalizada_pre_embarque: { coluna: "bg-amber-100 text-amber-700", borda: "border-l-amber-500" },
-  relatorio_embarques: { coluna: "bg-lime-100 text-lime-700", borda: "border-l-lime-500" },
-  embarcado_em_transito: { coluna: "bg-yellow-100 text-yellow-700", borda: "border-l-yellow-500" },
-  em_santos: { coluna: "bg-red-100 text-red-700", borda: "border-l-red-500" },
-  desembaraco_coleta: { coluna: "bg-blue-100 text-blue-700", borda: "border-l-blue-500" },
-  desova_agendada: { coluna: "bg-pink-100 text-pink-700", borda: "border-l-pink-500" },
-  armazenado: { coluna: "bg-indigo-100 text-indigo-700", borda: "border-l-indigo-500" },
-  finalizado_financeiro: { coluna: "bg-emerald-100 text-emerald-700", borda: "border-l-emerald-500" },
-  cancelado: { coluna: "bg-slate-100 text-slate-500", borda: "border-l-slate-400" },
-};
+import { COR_STATUS } from "./statusColor";
 
 interface KanbanPedidosProps {
   pedidos: Pedido[];
@@ -72,7 +56,7 @@ export function KanbanPedidos({ pedidos, fornecedorPorId }: KanbanPedidosProps) 
               const pedidoId = e.dataTransfer.getData("text/pedido-id");
               if (pedidoId) moverPedido.mutate({ pedidoId, status });
             }}
-            className={`w-64 shrink-0 rounded-lg border border-slate-200 bg-slate-50 ${
+            className={`w-64 shrink-0 rounded-lg border border-border-rtx bg-paper ${
               colunaSobre === status ? "ring-2 ring-blue-400" : ""
             }`}
           >
@@ -94,14 +78,14 @@ export function KanbanPedidos({ pedidos, fornecedorPorId }: KanbanPedidosProps) 
                     arrastando === pedido.id ? "opacity-40" : ""
                   }`}
                 >
-                  <div className="font-medium text-slate-800">{pedido.numero_referencia ?? "Sem referência"}</div>
-                  <div className="text-xs text-slate-500">{fornecedorPorId.get(pedido.fornecedor_id) ?? pedido.fornecedor_id}</div>
-                  <div className="mt-1 text-[11px] text-slate-400">
+                  <div className="font-medium text-ink">{pedido.numero_referencia ?? "Sem referência"}</div>
+                  <div className="text-xs text-muted-rtx">{fornecedorPorId.get(pedido.fornecedor_id) ?? pedido.fornecedor_id}</div>
+                  <div className="mt-1 text-[11px] text-muted-rtx">
                     {new Date(pedido.criado_em).toLocaleDateString("pt-BR")} · {pedido.moeda}
                   </div>
                 </div>
               ))}
-              {!itens.length && <p className="px-1 py-2 text-center text-xs text-slate-400">—</p>}
+              {!itens.length && <p className="px-1 py-2 text-center text-xs text-muted-rtx">—</p>}
             </div>
           </div>
         );

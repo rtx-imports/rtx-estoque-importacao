@@ -54,7 +54,7 @@ export const STATUS_BORDA: Record<StatusLinha, string> = {
   ok: "border-l-emerald-600",
   repor: "border-l-amber-500",
   revisar: "border-l-red-600",
-  semgiro: "border-l-slate-300",
+  semgiro: "border-l-border-rtx-strong",
 };
 export const STATUS_LABEL: Record<StatusLinha, string> = {
   ok: "Ok",

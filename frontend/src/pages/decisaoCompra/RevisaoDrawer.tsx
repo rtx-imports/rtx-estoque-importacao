@@ -89,18 +89,18 @@ export function RevisaoDrawer({
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-800">Revisar pedido — {fornecedorNome}</h2>
-            <p className="text-xs text-slate-500">{linhas.length} produto(s) selecionado(s)</p>
+            <h2 className="text-base font-semibold text-ink">Revisar pedido — {fornecedorNome}</h2>
+            <p className="text-xs text-muted-rtx">{linhas.length} produto(s) selecionado(s)</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <button onClick={onClose} className="text-muted-rtx hover:text-ink">
             ✕
           </button>
         </div>
 
-        <div className="mb-4 overflow-auto rounded-md border border-slate-200">
+        <div className="mb-4 overflow-auto rounded-md border border-border-rtx">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+            <thead className="bg-paper">
+              <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
                 <th className="px-2 py-2">Produto</th>
                 <th className="px-2 py-2 text-right">Qtd Sugerida</th>
                 <th className="px-2 py-2 text-right">Qtd Escolhida</th>
@@ -110,12 +110,12 @@ export function RevisaoDrawer({
             </thead>
             <tbody>
               {linhas.map(({ item, qtdEscolhida, valorUsd, valorBrl }) => (
-                <tr key={item.sku} className="border-b border-slate-100">
+                <tr key={item.sku} className="border-b border-border-rtx">
                   <td className="px-2 py-1.5">
-                    <div className="font-medium text-slate-800">{item.sku}</div>
-                    <div className="text-[11px] text-slate-500">{item.descricao}</div>
+                    <div className="font-medium text-ink">{item.sku}</div>
+                    <div className="text-[11px] text-muted-rtx">{item.descricao}</div>
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums text-slate-500">{item.necessidade}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-muted-rtx">{item.necessidade}</td>
                   <td className="px-2 py-1.5 text-right font-semibold tabular-nums">{qtdEscolhida}</td>
                   <td className="px-2 py-1.5 text-right tabular-nums">{formatarUSD(valorUsd)}</td>
                   <td className="px-2 py-1.5 text-right tabular-nums">{formatarBRL(valorBrl)}</td>
@@ -123,7 +123,7 @@ export function RevisaoDrawer({
               ))}
               {!linhas.length && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-4 text-center text-sm text-slate-400">
+                  <td colSpan={5} className="px-3 py-4 text-center text-sm text-muted-rtx">
                     Nenhum produto selecionado — marque produtos na grade antes de revisar.
                   </td>
                 </tr>
@@ -131,7 +131,7 @@ export function RevisaoDrawer({
             </tbody>
             {!!linhas.length && (
               <tfoot>
-                <tr className="border-t border-slate-200 font-semibold">
+                <tr className="border-t border-border-rtx font-semibold">
                   <td className="px-2 py-2" colSpan={3}>
                     Total
                   </td>
@@ -147,7 +147,7 @@ export function RevisaoDrawer({
         {exportar.isSuccess && <p className="mb-3 text-sm text-green-700">Planilha exportada com sucesso.</p>}
         {gerarPedido.isSuccess && <p className="mb-3 text-sm text-green-700">Pedido gerado — abrindo...</p>}
 
-        <div className="mt-auto space-y-2 border-t border-slate-200 pt-4">
+        <div className="mt-auto space-y-2 border-t border-border-rtx pt-4">
           <button
             onClick={handleExportar}
             disabled={exportar.isPending || !linhas.length}
@@ -158,11 +158,11 @@ export function RevisaoDrawer({
           <button
             onClick={handleGerarPedido}
             disabled={gerarPedido.isPending || !linhas.length}
-            className="w-full rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="w-full rounded-md border border-border-rtx-strong px-4 py-2 text-sm font-medium text-ink hover:bg-paper disabled:opacity-50"
           >
             {gerarPedido.isPending ? "Gerando..." : "Gerar Pedido (acompanhamento na página Pedidos)"}
           </button>
-          <p className="text-center text-[11px] text-slate-400">
+          <p className="text-center text-[11px] text-muted-rtx">
             Exportar não cria pedido; Gerar Pedido não envia planilha — os dois são independentes, use um, outro ou
             os dois.
           </p>

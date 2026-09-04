@@ -31,6 +31,13 @@
   (com impostos) vai morar no `financeiro-gbw`; este sistema só vai
   **importar** o resultado de lá quando essa integração existir — ainda não
   desenhada.
+  - Detalhado por Beatriz em 04/09/2026: quer uma coluna "Valor estimado
+    c/ impostos" na grade (unitário e total = unitário × quantidade
+    sugerida), puxada do `financeiro-gbw` quando essa integração existir.
+    **Precisa ficar visualmente marcada como aproximada** (rótulo "aprox."
+    ou "≈") — não é o valor final oficial, só uma estimativa. Adicionada
+    como coluna no protótipo visual (Artifact "Sistema Visual RTX"), sem
+    dado real ainda — cálculo de verdade depende da integração acima.
 
 ## Estoque consolidado por CNPJ (RTX/BW/BG/BRA) — sessão dedicada
 
@@ -65,7 +72,10 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   mexer, por ser cálculo financeiro sensível.
 - [ ] **Terminar sincronização de estoque completa** — job automático rodando
   sozinho (30 produtos/5min), cobre o catálogo inteiro (~3.200 produtos) em
-  algumas horas.
+  algumas horas. Checado em 04/09/2026: 2.050/3.210 produtos já com estoque
+  sincronizado, backend local rodando e avançando sozinho — sem ação
+  pendente, só aguardar (~3h pro resto no ritmo atual, se o processo local
+  ficar de pé).
 - [x] **width e lenght das placas vazio** - investigado e corrigido em
   04/09/2026 (decisão 30 do DECISIONS.md): causa era SKU de kit ("Kit de
   5"/"Kit de 8") usando dialeto diferente do SKU de peça avulsa.
@@ -98,3 +108,45 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
   (`grpKey`/`start`/`span` em `src/api/pages.ts`). Precisou reordenar a
   grade por Item Code (não só SKU) dentro de cada NCM pra as variações
   ficarem adjacentes.
+- [ ] **Suporte a mais de um usuário** — pedido de Beatriz em 04/09/2026, ao
+  discutir o redesenho do frontend. Hoje o sistema tem uma tabela `usuarios`
+  no schema (id/nome/email/senha_hash/ativo) mas nenhuma autenticação de
+  verdade implementada — é rascunho de fase futura. Permissões por usuário
+  (quem pode editar o quê, por fase do processo) ficam pra avaliar depois,
+  quando essa tarefa for priorizada — não desenhar agora.
+- [ ] **Modo claro/escuro no frontend** — pedido de Beatriz em 04/09/2026,
+  junto com o redesenho visual (paleta navy/dourado extraída da logo, ver
+  guia de estilo publicado como Artifact nesta sessão). Ainda não
+  implementado no React real — só existe como conceito no protótipo visual.
+- [x] **Aplicar a paleta/tipografia no React real** — feito em 04/09/2026,
+  branch `visual/paleta-rtx`: sidebar com logo real, tokens de cor
+  (`frontend/src/index.css`, navy/gold/paper/border/muted/info) aplicados
+  em todas as páginas existentes, tipografia trocada pra Geist (principal)
+  + Inter (alternativa, fallback no stack) + `tabular-nums` nos números
+  financeiros — a pedido de Beatriz, substituindo a escolha inicial
+  Sora/IBM Plex Sans do protótipo. IBM Plex Mono mantido só na grade de
+  dados/SKU (decisão anterior, familiar ao Bruno). Nada de estrutura/rota
+  mudou, só o visual. Também criadas as 3 páginas de projeto futuro que
+  só existiam no protótipo (`EstoquePage`, `RastreamentoPage`,
+  `PrecosFornecedorPage`) — visual pronto, sem funcionalidade real ainda
+  (banner de "conceito" em cada uma), reservando o lugar no menu.
+- [ ] **Itens do pedido devem puxar de "Preços por Fornecedor"** — pedido
+  de Beatriz em 04/09/2026: a informação mais importante do pedido, além
+  das datas previstas, é a quantidade total de rolinhos/placas — hoje o
+  formulário "Adicionar item" em `PedidoDetalhePage.tsx` é cadastro livre
+  (descrição/quantidade/unidade/preço/JSON de atributos extras); a ideia é
+  que passe a consultar a tabela de preço por fornecedor (página
+  `PrecosFornecedorPage`, ainda sem backend) em vez de digitar tudo à mão.
+  Banner de aviso já colocado na seção Itens da página de detalhe.
+  Bloqueado até "Preços por Fornecedor" ganhar dado real (aguardando
+  planilhas do setor de importação).
+- [ ] **Colorir status do pedido também no seletor de detalhe** — feito em
+  04/09/2026: `COR_STATUS` (antes só no Kanban) virou fonte única em
+  `pages/pedidos/statusColor.ts`, reusada no `<select>` de status de
+  `PedidoDetalhePage.tsx` — cada status agora tem a mesma cor nos dois
+  lugares. (Marcado como feito, deixado aqui só pelo rastro da decisão.)
+- [x] **Nomes humanizados no upload de documentos** — feito em 04/09/2026:
+  `TIPO_DOCUMENTO_LABEL`/`FASE_DOCUMENTO_LABEL` (`api/types.ts`) trocam os
+  valores de enum (`invoice_proforma`, `pagamento_inicial`, ...) por texto
+  legível no formulário e na tabela de documentos — os valores salvos no
+  banco continuam os mesmos, só a exibição mudou.

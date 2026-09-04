@@ -3,10 +3,13 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { clsx } from "clsx";
 import { useParametros } from "./api/compra";
 import { CompraPage } from "./pages/CompraPage";
+import { EstoquePage } from "./pages/EstoquePage";
 import { FornecedoresPage } from "./pages/FornecedoresPage";
 import { PedidoDetalhePage } from "./pages/PedidoDetalhePage";
 import { PedidosPage } from "./pages/PedidosPage";
+import { PrecosFornecedorPage } from "./pages/PrecosFornecedorPage";
 import { ProdutosPage } from "./pages/ProdutosPage";
+import { RastreamentoPage } from "./pages/RastreamentoPage";
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -14,8 +17,8 @@ function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
       to={to}
       className={({ isActive }) =>
         clsx(
-          "rounded-md px-3 py-2 text-sm font-medium",
-          isActive ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-200",
+          "rounded-lg border-l-2 border-transparent px-3 py-2 text-[13.5px] font-medium text-slate-300",
+          isActive ? "border-gold bg-navy-2 text-white" : "hover:bg-navy-2 hover:text-white",
         )
       }
     >
@@ -43,8 +46,8 @@ function Relogio() {
   });
   const hora = agora.toLocaleTimeString("pt-BR");
   return (
-    <div className="font-planilha text-xs text-slate-500">
-      <span className="capitalize">{data}</span> <span className="font-medium text-slate-700">{hora}</span>
+    <div className="num-tabular text-xs text-muted-rtx">
+      <span className="capitalize">{data}</span> <span className="font-medium text-ink">{hora}</span>
     </div>
   );
 }
@@ -75,13 +78,13 @@ function CambioIndicador() {
           : "Câmbio nunca ajustado manualmente — usando valor padrão do sistema"
       }
       className={clsx(
-        "font-planilha flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold",
+        "num-tabular flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold",
         desatualizado ? "border-amber-300 bg-amber-50 text-amber-700" : "border-emerald-300 bg-emerald-50 text-emerald-700",
       )}
     >
       <span>US$ 1 = R$ {parametros.cambio.toFixed(4)}</span>
       {parametros.ptaxReferencia && (
-        <span className="font-normal text-slate-400">
+        <span className="font-normal text-muted-rtx">
           (PTAX {parametros.ptaxReferencia.valor.toFixed(4)})
         </span>
       )}
@@ -92,30 +95,52 @@ function CambioIndicador() {
 
 export function App() {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
-          <span className="mr-4 text-lg font-semibold text-slate-800">RTX Imports</span>
+    <div className="grid min-h-screen grid-cols-[240px_1fr]">
+      <aside className="sticky top-0 flex h-screen flex-col gap-6 bg-navy px-3.5 py-5">
+        <div className="flex flex-col items-center gap-2.5 px-2 pb-1 pt-1">
+          <div className="rounded-xl bg-white px-4 py-2.5 shadow-sm">
+            <img src="/logo-rtx.png" alt="RTX Imports" className="h-[54px] w-auto" />
+          </div>
+          <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-rtx">Estoque &amp; Importação</div>
+        </div>
+
+        <nav className="flex flex-col gap-0.5">
+          <div className="px-2.5 pb-1 text-[10.5px] uppercase tracking-[0.1em] text-muted-rtx">Compras</div>
           <NavItem to="/compra">Decisão de Compra</NavItem>
-          <NavItem to="/fornecedores">Fornecedores</NavItem>
-          <NavItem to="/produtos">Produtos</NavItem>
           <NavItem to="/pedidos">Pedidos</NavItem>
-          <div className="ml-auto flex items-center gap-4">
+          <NavItem to="/rastreamento">Rastreamento de Carga</NavItem>
+          <NavItem to="/fornecedores">Fornecedores</NavItem>
+          <NavItem to="/precos">Preços por Fornecedor</NavItem>
+          <NavItem to="/produtos">Produtos</NavItem>
+        </nav>
+        <nav className="flex flex-col gap-0.5">
+          <div className="px-2.5 pb-1 text-[10.5px] uppercase tracking-[0.1em] text-muted-rtx">Estoque</div>
+          <NavItem to="/estoque">Visão Geral</NavItem>
+        </nav>
+      </aside>
+
+      <div className="flex min-w-0 flex-col">
+        <header className="flex items-center justify-between border-b border-border-rtx bg-white px-7 py-3">
+          <span className="font-display text-sm font-semibold text-ink">RTX Imports</span>
+          <div className="flex items-center gap-4">
             <CambioIndicador />
             <Relogio />
           </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Routes>
-          <Route path="/" element={<PedidosPage />} />
-          <Route path="/compra" element={<CompraPage />} />
-          <Route path="/fornecedores" element={<FornecedoresPage />} />
-          <Route path="/produtos" element={<ProdutosPage />} />
-          <Route path="/pedidos" element={<PedidosPage />} />
-          <Route path="/pedidos/:id" element={<PedidoDetalhePage />} />
-        </Routes>
-      </main>
+        </header>
+        <main className="px-7 py-6">
+          <Routes>
+            <Route path="/" element={<PedidosPage />} />
+            <Route path="/compra" element={<CompraPage />} />
+            <Route path="/fornecedores" element={<FornecedoresPage />} />
+            <Route path="/produtos" element={<ProdutosPage />} />
+            <Route path="/pedidos" element={<PedidosPage />} />
+            <Route path="/pedidos/:id" element={<PedidoDetalhePage />} />
+            <Route path="/rastreamento" element={<RastreamentoPage />} />
+            <Route path="/precos" element={<PrecosFornecedorPage />} />
+            <Route path="/estoque" element={<EstoquePage />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }

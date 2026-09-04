@@ -13,7 +13,7 @@ export function KpiCards({ kpis }: { kpis: PropostaKpis }) {
       label: "Valor sugerido para compra",
       valor: formatarUSD(kpis.totalSugeridoUsd),
       sub: formatarBRL(kpis.totalSugeridoBrl),
-      tom: "text-slate-800",
+      tom: "text-ink",
     },
     {
       label: "Produtos críticos",
@@ -37,17 +37,17 @@ export function KpiCards({ kpis }: { kpis: PropostaKpis }) {
       label: "Cobertura média",
       valor: kpis.coberturaMediaDias != null ? `${Math.round(kpis.coberturaMediaDias)} dias` : "—",
       sub: "estoque físico atual",
-      tom: "text-slate-800",
+      tom: "text-ink",
     },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {cards.map((card) => (
-        <div key={card.label} className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{card.label}</p>
-          <p className={`mt-1 text-lg font-semibold ${card.tom}`}>{card.valor}</p>
-          <p className="text-[11px] text-slate-500">{card.sub}</p>
+        <div key={card.label} className="rounded-xl border border-border-rtx bg-white p-3.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-rtx">{card.label}</p>
+          <p className={`num-tabular mt-1.5 text-lg font-semibold ${card.tom}`}>{card.valor}</p>
+          <p className="text-[11px] text-muted-rtx">{card.sub}</p>
         </div>
       ))}
     </div>

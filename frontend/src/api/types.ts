@@ -111,6 +111,34 @@ export const FASES_DOCUMENTO = [
   "contabilidade",
 ] as const;
 
+/** Nomes legíveis pros valores técnicos de TIPOS_DOCUMENTO/FASES_DOCUMENTO —
+ * pedido de Beatriz (04/09/2026): "no adicionar documentos dar nomes mais
+ * humanos e menos programação". Usado no formulário de upload e na tabela
+ * de documentos de PedidoDetalhePage; os valores em si (chave do enum)
+ * continuam os mesmos, só a exibição muda. */
+export const TIPO_DOCUMENTO_LABEL: Record<(typeof TIPOS_DOCUMENTO)[number], string> = {
+  invoice_proforma: "Invoice Proforma",
+  invoice_comercial: "Invoice Comercial",
+  comprovante_pagamento: "Comprovante de Pagamento",
+  packing_list: "Packing List",
+  bl: "Conhecimento de Embarque (BL)",
+  di: "Declaração de Importação (DI)",
+  nf_transferencia: "Nota Fiscal de Transferência",
+  outro: "Outro",
+};
+
+export const FASE_DOCUMENTO_LABEL: Record<(typeof FASES_DOCUMENTO)[number], string> = {
+  pedido: "Pedido",
+  pagamento_inicial: "Pagamento Inicial",
+  producao: "Produção",
+  embarque: "Embarque",
+  desembaraco: "Desembaraço",
+  transporte: "Transporte",
+  conferencia: "Conferência",
+  pagamento_final: "Pagamento Final",
+  contabilidade: "Contabilidade",
+};
+
 export interface PedidoDocumento {
   id: string;
   pedido_id: string;

@@ -13,10 +13,11 @@ import {
   useUpdatePedidoStatus,
   useUploadDocumento,
 } from "../api/pedidos";
-import { FASES_DOCUMENTO, PEDIDO_STATUS, PEDIDO_STATUS_LABEL, TIPOS_DOCUMENTO } from "../api/types";
+import { FASE_DOCUMENTO_LABEL, FASES_DOCUMENTO, PEDIDO_STATUS, PEDIDO_STATUS_LABEL, TIPO_DOCUMENTO_LABEL, TIPOS_DOCUMENTO } from "../api/types";
+import { COR_STATUS } from "./pedidos/statusColor";
 
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none";
-const labelClass = "block text-xs font-medium text-slate-600 mb-1";
+const inputClass = "w-full rounded-md border border-border-rtx-strong px-3 py-1.5 text-sm focus:border-gold focus:outline-none";
+const labelClass = "block text-xs font-medium text-muted-rtx mb-1";
 
 export function PedidoDetalhePage() {
   const { id } = useParams<{ id: string }>();
@@ -24,29 +25,29 @@ export function PedidoDetalhePage() {
   const { data: fornecedor } = useFornecedor(pedido?.fornecedor_id);
   const updateStatus = useUpdatePedidoStatus(id ?? "");
 
-  if (isLoading) return <p className="text-sm text-slate-500">Carregando...</p>;
+  if (isLoading) return <p className="text-sm text-muted-rtx">Carregando...</p>;
   if (!pedido) return <p className="text-sm text-red-600">Pedido não encontrado.</p>;
 
   return (
     <div className="space-y-6">
-      <Link to="/pedidos" className="text-sm text-blue-600 hover:underline">
+      <Link to="/pedidos" className="text-sm text-gold-dark hover:underline">
         ← Voltar para pedidos
       </Link>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-lg border border-border-rtx bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">
+            <h1 className="text-lg font-semibold text-ink">
               {pedido.numero_referencia ?? "Pedido sem referência"}
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-rtx">
               Fornecedor: {fornecedor?.nome ?? pedido.fornecedor_id} · Moeda: {pedido.moeda}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <label className={labelClass}>Status</label>
             <select
-              className={inputClass}
+              className={`rounded-md border-0 px-3 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-gold ${COR_STATUS[pedido.status].coluna}`}
               value={pedido.status}
               onChange={(e) => updateStatus.mutate(e.target.value as (typeof PEDIDO_STATUS)[number])}
             >
@@ -116,11 +117,11 @@ function ChecklistSection({
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <section className="rounded-lg border border-border-rtx bg-white p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-800">Checklist</h2>
+        <h2 className="text-sm font-semibold text-ink">Checklist</h2>
         {checklist.length > 0 && (
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted-rtx">
             {concluidos} de {checklist.length} concluído{concluidos === 1 ? "" : "s"} (
             {Math.round((concluidos / checklist.length) * 100)}%)
           </span>
@@ -128,14 +129,14 @@ function ChecklistSection({
       </div>
 
       {checklist.length === 0 && (
-        <div className="mb-3 rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
-          <p className="mb-2 text-sm text-slate-500">
+        <div className="mb-3 rounded-md border border-dashed border-border-rtx-strong bg-paper p-4 text-center">
+          <p className="mb-2 text-sm text-muted-rtx">
             Este pedido não tem checklist ainda (foi criado antes da matriz existir).
           </p>
           <button
             onClick={() => gerarMatriz.mutate()}
             disabled={gerarMatriz.isPending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
           >
             {gerarMatriz.isPending ? "Gerando..." : "Gerar matriz padrão RTX (113 itens)"}
           </button>
@@ -152,7 +153,7 @@ function ChecklistSection({
         <button
           type="submit"
           disabled={addItem.isPending || !descricao.trim()}
-          className="shrink-0 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -165,23 +166,23 @@ function ChecklistSection({
             const completo = feitos === grupo.itens.length;
             const aberto = gruposAbertos.has(grupo.nome);
             return (
-              <div key={grupo.nome} className="rounded-md border border-slate-200">
+              <div key={grupo.nome} className="rounded-md border border-border-rtx">
                 <button
                   type="button"
                   onClick={() => toggleGrupo(grupo.nome)}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-paper"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <span className="flex items-center gap-2 text-sm font-medium text-ink">
                     <span>{aberto ? "▾" : "▸"}</span>
                     {grupo.nome}
                     {completo && <span className="text-emerald-600">✓</span>}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-muted-rtx">
                     {feitos}/{grupo.itens.length}
                   </span>
                 </button>
                 {aberto && (
-                  <ul className="divide-y divide-slate-100 border-t border-slate-100 px-3">
+                  <ul className="divide-y divide-border-rtx border-t border-border-rtx px-3">
                     {grupo.itens.map((item) => (
                       <li key={item.id} className="flex items-center gap-2 py-1.5">
                         <input
@@ -190,7 +191,7 @@ function ChecklistSection({
                           onChange={(e) => toggleItem.mutate({ itemId: item.id, concluido: e.target.checked })}
                         />
                         <span
-                          className={`flex-1 text-sm ${item.concluido ? "text-slate-400 line-through" : "text-slate-700"}`}
+                          className={`flex-1 text-sm ${item.concluido ? "text-muted-rtx line-through" : "text-ink"}`}
                         >
                           {item.descricao}
                         </span>
@@ -251,8 +252,14 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
   const totalPedido = itens.reduce((soma, item) => soma + item.valor_total, 0);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-800">Itens</h2>
+    <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold text-ink">Itens</h2>
+
+      <div className="mb-4 rounded-md border border-info bg-info-bg px-3 py-2 text-xs text-info">
+        Pendente (ver TODO.md): os itens do pedido vão passar a puxar a quantidade total de rolinhos/placas direto
+        da planilha de Preços por Fornecedor (ajustável) em vez do formulário livre abaixo — é a informação mais
+        importante do pedido além das datas previstas. Cadastro manual continua funcionando até lá.
+      </div>
 
       <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div className="sm:col-span-2">
@@ -308,7 +315,7 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
           <button
             type="submit"
             disabled={addItem.isPending}
-            className="w-full rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="w-full rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
           >
             {addItem.isPending ? "Adicionando..." : "Adicionar item"}
           </button>
@@ -317,11 +324,11 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
       {erro && <p className="mb-3 text-sm text-red-600">{erro}</p>}
 
       {itens.length === 0 ? (
-        <p className="text-sm text-slate-500">Nenhum item adicionado ainda.</p>
+        <p className="text-sm text-muted-rtx">Nenhum item adicionado ainda.</p>
       ) : (
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+            <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
               <th className="py-2">Descrição</th>
               <th className="py-2">Qtd</th>
               <th className="py-2">Unidade</th>
@@ -332,7 +339,7 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
           </thead>
           <tbody>
             {itens.map((item) => (
-              <tr key={item.id} className="border-b border-slate-100">
+              <tr key={item.id} className="border-b border-border-rtx">
                 <td className="py-2">{item.descricao}</td>
                 <td className="py-2">{item.quantidade}</td>
                 <td className="py-2">{item.unidade}</td>
@@ -351,10 +358,10 @@ function ItensSection({ pedidoId, itens }: { pedidoId: string; itens: import("..
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={4} className="pt-2 text-right text-sm font-medium text-slate-600">
+              <td colSpan={4} className="pt-2 text-right text-sm font-medium text-muted-rtx">
                 Total do pedido:
               </td>
-              <td className="pt-2 text-sm font-semibold text-slate-800">{totalPedido.toFixed(2)}</td>
+              <td className="pt-2 text-sm font-semibold text-ink">{totalPedido.toFixed(2)}</td>
               <td />
             </tr>
           </tfoot>
@@ -394,8 +401,8 @@ function DocumentosSection({
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-800">Documentos</h2>
+    <section className="rounded-lg border border-border-rtx bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold text-ink">Documentos</h2>
 
       <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div>
@@ -403,7 +410,7 @@ function DocumentosSection({
           <select className={inputClass} value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
             {TIPOS_DOCUMENTO.map((tipo) => (
               <option key={tipo} value={tipo}>
-                {tipo}
+                {TIPO_DOCUMENTO_LABEL[tipo]}
               </option>
             ))}
           </select>
@@ -413,7 +420,7 @@ function DocumentosSection({
           <select className={inputClass} value={fase} onChange={(e) => setFase(e.target.value)}>
             {FASES_DOCUMENTO.map((f) => (
               <option key={f} value={f}>
-                {f}
+                {FASE_DOCUMENTO_LABEL[f]}
               </option>
             ))}
           </select>
@@ -430,7 +437,7 @@ function DocumentosSection({
           <button
             type="submit"
             disabled={uploadDocumento.isPending}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-gold px-4 py-1.5 text-sm font-medium text-navy hover:bg-gold-dark disabled:opacity-50"
           >
             {uploadDocumento.isPending ? "Enviando..." : "Enviar documento"}
           </button>
@@ -439,11 +446,11 @@ function DocumentosSection({
       {erro && <p className="mb-3 text-sm text-red-600">{erro}</p>}
 
       {documentos.length === 0 ? (
-        <p className="text-sm text-slate-500">Nenhum documento anexado ainda.</p>
+        <p className="text-sm text-muted-rtx">Nenhum documento anexado ainda.</p>
       ) : (
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+            <tr className="border-b border-border-rtx text-xs uppercase text-muted-rtx">
               <th className="py-2">Tipo</th>
               <th className="py-2">Fase</th>
               <th className="py-2">Versão</th>
@@ -453,15 +460,15 @@ function DocumentosSection({
           </thead>
           <tbody>
             {documentos.map((documento) => (
-              <tr key={documento.id} className="border-b border-slate-100">
-                <td className="py-2">{documento.tipo_documento}</td>
-                <td className="py-2">{documento.fase}</td>
+              <tr key={documento.id} className="border-b border-border-rtx">
+                <td className="py-2">{TIPO_DOCUMENTO_LABEL[documento.tipo_documento]}</td>
+                <td className="py-2">{FASE_DOCUMENTO_LABEL[documento.fase]}</td>
                 <td className="py-2">v{documento.versao}</td>
                 <td className="py-2">{new Date(documento.enviado_em).toLocaleString("pt-BR")}</td>
                 <td className="py-2 text-right">
                   <a
                     href={`/api${documento.arquivo_url}`}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-gold-dark hover:underline"
                     target="_blank"
                     rel="noreferrer"
                   >
