@@ -43,11 +43,16 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
 
 ## Pendências do sistema / próximas sessões
 
-- [ ] **Pesquisar acompanhamento de carga via MarineTraffic (ou equivalente)
-  em tempo real** — atribuído a mim: levantar como integrar (API paga? scraping?
-  que infos dá pra puxar — ETA, transbordo, posição) pra eventualmente
-  automatizar os itens manuais da matriz de checklist (3.3, 4.1). Ainda não
-  pesquisado.
+- [x] **Pesquisar acompanhamento de carga via MarineTraffic (ou equivalente)
+  em tempo real** — pesquisado em 04/09/2026. Resumo: a peça útil é a
+  Container Tracking API (ETA preditivo, eventos de viagem, congestionamento
+  de terminal, webhooks), mas é produto separado do plano web e vendido via
+  sales (Kpler) — tier Essential ~US$100/mês (1 navio, 300 notificações/mês),
+  Enterprise sob consulta. Alternativa mais previsível em preço: Datalastic.
+  Relatório completo em `material de apoio para o sistema
+  estoque-importação\Relatorio_MarineTraffic_API.html`. Falta decidir se
+  vale a pena contratar antes de integrar (ver custo-benefício no relatório)
+  — depende de volume real de containers/mês, ainda não levantado.
 - [ ] **Bug em aberto — moeda de `custos.json`**: arquivo portado do
   `rtx-pedidos` tem `"moeda": "BRL"`, mas os valores são tratados como dólar
   em todo o sistema novo (inclusive multiplicados por câmbio de novo em
@@ -61,10 +66,22 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
 - [ ] **Terminar sincronização de estoque completa** — job automático rodando
   sozinho (30 produtos/5min), cobre o catálogo inteiro (~3.200 produtos) em
   algumas horas.
-- [ ] **width e lenght das placas vazio** - investigar o motivo e padrão disso na planilha de pedido e invoice 
-- [ ] **3 SKUs classificados errado como "rolinho"** (na prática são
-  espátulas/acessórios, sem dimensão real) — achado ao investigar
-  Width/Length vazio; baixa prioridade, mas fica registrado.
+- [x] **width e lenght das placas vazio** - investigado e corrigido em
+  04/09/2026 (decisão 30 do DECISIONS.md): causa era SKU de kit ("Kit de
+  5"/"Kit de 8") usando dialeto diferente do SKU de peça avulsa.
+  `dimensaoPlaca` agora casa por sufixo de SKU com a peça avulsa
+  correspondente já medida — recupera 64 dos 229 que estavam vazios. Os
+  ~165 restantes (sem par avulso na tabela) continuam "—" de propósito
+  (regex na descrição foi cogitado e descartado de novo, mesma razão da
+  decisão 24 — não inventar medida).
+- [x] **3 SKUs classificados errado como "rolinho"** (na prática são
+  espátulas/acessórios, sem dimensão real) — corrigido em 04/09/2026:
+  criado tipo `acessorio` (cadastro dinâmico, decisão 27) e reclassificados
+  `01415ESCMFELTR`, `01415ESDEFELTR`, `01415ESPRIGIDA`. Ainda sem vínculo
+  com fornecedor (`fornecedor_tipos_produto`) — por isso somem da grade de
+  Decisão de Compra por enquanto. **Pendência de negócio**: confirmar com
+  Beatriz qual fornecedor vende essas espátulas e se devem aparecer em
+  algum lugar do sistema (grade separada? não faz sentido width/length ali).
 - [ ] **Modelo de exportação da planilha de pedido** — bloqueado até a
   Beatriz mandar: modelo de planilha, NCM, Client Code e valores unitários
   confirmados.
@@ -75,5 +92,9 @@ Confirmado: começa do zero, sessão própria. Envolve pelo menos:
 - [ ] **Atualizar `custos.json`** quando a planilha de custo nova chegar (o
   gerador em si, `gen-custos.ts`, não foi portado — precisa rodar no
   `rtx-pedidos` e copiar o resultado, ou portar o gerador).
-- [ ] **Ajuste na tabela "Decisão de Compra"** - produto (ex.: DG3111G
-Self Adhesive Vinyl Glossy - 80/80GSM (Samples 02 pure white film)) tenha um conjunto de varias linhas das variações de tamanho dele - fica visualmente mais confortável - consultar em `rtx-pedidos`
+- [x] **Ajuste na tabela "Decisão de Compra"** - implementado em 04/09/2026
+  (decisão 31 do DECISIONS.md): variações de tamanho do mesmo produto agora
+  mesclam a célula Item/Descrição (rowspan), mesmo padrão do `rtx-pedidos`
+  (`grpKey`/`start`/`span` em `src/api/pages.ts`). Precisou reordenar a
+  grade por Item Code (não só SKU) dentro de cada NCM pra as variações
+  ficarem adjacentes.

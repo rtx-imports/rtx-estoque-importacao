@@ -28,4 +28,16 @@ describe("dimensaoProduto", () => {
   it("retorna null sem tipo classificado", () => {
     expect(dimensaoProduto("02105BRABRI50C", null)).toBeNull();
   });
+
+  it("recupera dimensão de placa em kit casando o sufixo com a peça avulsa correspondente na tabela", () => {
+    // "70605PTJAZU77C" está na tabela (peça avulsa); "05605PTJAZU77C" é o mesmo
+    // material vendido em kit de 5 — mesmo sufixo a partir da posição 2.
+    expect(dimensaoProduto("05605PTJAZU77C", "placa")).toEqual({ widthM: 0.7, lengthM: 0.77 });
+  });
+
+  it("continua null para placa de kit sem par avulso na tabela (não inventa a partir da descrição)", () => {
+    // decisão 24 do DECISIONS.md: extrair medida por regex na descrição foi
+    // avaliado e descartado de propósito.
+    expect(dimensaoProduto("05605PLBRAN083", "placa")).toBeNull();
+  });
 });

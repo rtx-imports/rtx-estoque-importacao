@@ -381,6 +381,40 @@ independente. Ver decisão 12 abaixo para o que isso muda no escopo.
     produtos importados antes desse mecanismo existir, e o caso de custos.json
     ser atualizado depois). Nunca sobrescreve um custo já diferente de 0 —
     respeita ajuste manual ou um custo já preenchido antes.
+30. **Width/Length de placa em kit ("Kit de 5"/"Kit de 8") recuperado via
+    match de sufixo, investigado a pedido de Beatriz (TODO "width e length das
+    placas vazio")** — das 268 placas ativas, 229 ficavam sem dimensão porque
+    a maioria usa um SKU de kit em que os 2 primeiros dígitos são a
+    QUANTIDADE do kit (ex. `05605PTJBRA38C` = kit de 5), não a largura em cm
+    como nos SKUs de peça avulsa que a tabela `placas-dimensoes.json`
+    (decisão 26) cobre. Como o restante do SKU do kit (posição 2 em diante) é
+    idêntico ao da peça avulsa correspondente — mesmo material físico, só
+    embalado diferente — `dimensaoPlaca` (`domain/dimensoes.ts`) agora também
+    tenta casar por esse sufixo antes de desistir; recupera 64 dos 229. **Não**
+    voltamos a tentar extrair medida por regex da descrição (recuperaria mais
+    ~68) — a decisão 24 já tinha avaliado e descartado essa abordagem de
+    propósito, e nada mudou nesse racional. Os ~165 sem par avulso na tabela
+    continuam "—". Achado colateral da mesma investigação: 3 SKUs de linha
+    "415" (`01415ESCMFELTR`, `01415ESDEFELTR`, `01415ESPRIGIDA` — espátulas de
+    aplicação, não rolo) estão classificados como "rolinho" só porque
+    `classificarTipoPorSku` trata qualquer linha ≠ "605" como rolinho; não
+    quebra nada hoje (Width/Length já ficava null pra eles, o padrão de SKU não
+    bate), mas é classificação errada — registrado como pendência de decisão
+    de negócio (criar tipo "acessório"? excluir da Decisão de Compra? ver
+    TODO.md), não uma correção de código sozinha porque envolve decidir se
+    esses itens devem aparecer na grade de compra.
+31. **Variações de tamanho do mesmo produto mescladas visualmente na grade da
+    Decisão de Compra** (`GradePrincipal.tsx`), a pedido de Beatriz —
+    consultado `rtx-pedidos` (`src/api/pages.ts`) como referência de como
+    fazer. Lá o padrão é: chave de grupo = NCM + Item Code + Descrição;
+    linhas consecutivas do mesmo grupo mesclam a célula Item/Descrição via
+    `rowspan` (só a primeira linha do grupo emite a célula). Trazido pra cá
+    do mesmo jeito, com um ajuste necessário: a ordenação da grade agora é
+    NCM → Item Code → Width → Length (antes era só por NCM, com a ordem de
+    SKU vindo do banco) — sem isso as variações de um mesmo produto não
+    ficam adjacentes, porque os 2 primeiros dígitos do SKU são o
+    comprimento (não o produto), então SKUs do mesmo Item Code se espalham
+    pela tabela inteira quando ordenados como string.
 
 ## Pendentes — nenhuma suposição foi feita, precisa de confirmação
 
